@@ -1,0 +1,82 @@
+# Rust
+/target
+*.so
+*.d
+
+# Python
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+*.egg
+.installed.cfg
+.Python
+.venv/
+venv/
+env/
+
+# Build / packaging
+build/
+dist/
+develop-eggs/
+eggs/
+sdist/
+parts/
+var/
+lib/
+lib64/
+include/
+man/
+bin/
+pip-log.txt
+pip-selfcheck.json
+
+# Test / coverage
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+nosetests.xml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python version managers
+.python-version
+
+# uv
+.uv/
+uv.lock
+
+# AI tools — Claude Code
+.claude/settings.local.json
+
+# AI tools — general (Cursor, Copilot, Windsurf, etc.)
+.cursor/
+.cursorignore
+.cursorindexingignore
+.github/copilot-instructions.md
+.codeium/
+.windsurf/
+
+# LLM context / scratch files
+*.prompt
+*.llm
+llm_context/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Docs build
+docs/_build/
+
+# Legacy
+scope/
+example_usage.md
