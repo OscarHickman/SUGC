@@ -1,0 +1,118 @@
+"""
+Benchmark SCOPE vs Corrfunc for 3D real-space pair counting.
+
+SCOPE counts pairs split by sub-volume ID (auto + cross separately).
+Corrfunc counts all pairs in one pass with SIMD optimisation.
+
+The timings are not directly comparing identical work — SCOPE does strictly more
+(it routes each pair to one of two accumulators), but the cell-list structure and
+O(N) scaling approach are the same, so this shows where SCOPE sits relative to a
+state-of-the-art reference implementation.
+"""
+
+import time
+import os
+import numpy as np
+from Corrfunc.theory import DD
+from scope._scope import count_pairs_1d
+
+# ── Fixed parameters ──────────────────────────────────────────────────────────
+RNG_SEED  = 42
+BOX_SIZE  = 512.0      # P-Millennium Mpc/h
+N_SUBVOLS = 27         # 3×3×3 grid
+N_SUBVOLS_SELECTED = 9 # use 1/3 of the box
+
+# 30 log-spaced bins from 0.01 to 256 Mpc/h  (covers kpc/h to box/2)
+R_BINS = np.logspace(np.log10(0.01), np.log10(256.0), 31)
+
+# N values to sweep
+N_PARTICLES = [10_000, 30_000, 100_000, 300_000]
+
+REPEATS = 3
+
+N_THREADS_CF = min(16, max(1, len(os.sched_getaffinity(0))))
+
+
+def make_catalogue(n, rng):
+    """Uniform random positions + sub-volume IDs on a 3×3×3 grid."""
+    coords = rng.uniform(0, BOX_SIZE, size=(n, 3)).astype(np.float64, order="C")
+    cell = np.floor(coords / (BOX_SIZE / 3)).astype(int).clip(0, 2)
+    sv_ids = (cell[:, 0] * 9 + cell[:, 1] * 3 + cell[:, 2]).astype(np.int32)
+    mask = sv_ids < N_SUBVOLS_SELECTED
+    return coords[mask], sv_ids[mask]
+
+
+def time_scope(coords, sv_ids):
+    times = []
+    for _ in range(REPEATS):
+        t0 = time.perf_counter()
+        count_pairs_1d(coords, sv_ids, R_BINS, BOX_SIZE)
+        times.append(time.perf_counter() - t0)
+    return float(np.median(times))
+
+
+def time_corrfunc(coords, nthreads=1):
+    x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
+    times = []
+    for _ in range(REPEATS):
+        t0 = time.perf_counter()
+        DD(
+            autocorr=1,
+            nthreads=nthreads,
+            binfile=R_BINS,
+            X1=x, Y1=y, Z1=z,
+            periodic=True,
+            boxsize=BOX_SIZE,
+            output_ravg=False,
+            verbose=False,
+        )
+        times.append(time.perf_counter() - t0)
+    return float(np.median(times))
+
+
+def main():
+    print("=" * 75)
+    print("  SCOPE vs Corrfunc — 3D real-space pair counting benchmark")
+    print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_SUBVOLS_SELECTED}/{N_SUBVOLS} sub-vols")
+    print(f"  {len(R_BINS)-1} log bins  [{R_BINS[0]:.3f}, {R_BINS[-1]:.1f}] Mpc/h")
+    print(f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SCOPE uses Rayon default")
+    print(f"  Median of {REPEATS} runs")
+    print("=" * 75)
+    print(
+        f"  {'N input':>8}  {'N actual':>8}  "
+        f"{'SCOPE':>8}  {'CF 1t':>8}  {'ratio':>6}  "
+        f"{'CF Nt':>8}  {'ratio':>6}"
+    )
+    print(f"  {'(req)':>8}  {'(sel)':>8}  "
+          f"{'[ms]':>8}  {'[ms]':>8}  {'':>6}  "
+          f"{'[ms]':>8}  {'':>6}")
+    print("-" * 75)
+
+    rng = np.random.default_rng(RNG_SEED)
+
+    for n_req in N_PARTICLES:
+        coords, sv_ids = make_catalogue(n_req, rng)
+        n_actual = len(coords)
+
+        t_scope  = time_scope(coords, sv_ids)
+        t_cf_1t  = time_corrfunc(coords, nthreads=1)
+        t_cf_nt  = time_corrfunc(coords, nthreads=N_THREADS_CF)
+
+        r1 = t_scope / t_cf_1t
+        rN = t_scope / t_cf_nt
+        print(
+            f"  {n_req:>8,}  {n_actual:>8,}  "
+            f"{t_scope*1e3:>8.1f}  {t_cf_1t*1e3:>8.1f}  {r1:>6.2f}x  "
+            f"{t_cf_nt*1e3:>8.1f}  {rN:>6.2f}x"
+        )
+
+    print("=" * 75)
+    print()
+    print("Notes:")
+    print("  SCOPE routes each pair to dd_auto or dd_cross — strictly more work than Corrfunc.")
+    print("  Corrfunc uses AVX/AVX2 SIMD, tile-based cache blocking, and optional OpenMP.")
+    print("  ratio > 1 means SCOPE is slower; < 1 means SCOPE is faster.")
+
+
+if __name__ == "__main__":
+    main()

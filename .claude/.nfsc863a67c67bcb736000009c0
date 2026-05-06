@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(maturin --version)",
+      "Bash(cargo --version)",
+      "Bash(rustc --version)",
+      "Bash(pip show *)",
+      "Bash(pip3 show *)",
+      "Bash(pip install *)",
+      "Bash(maturin new *)",
+      "Bash(maturin develop *)",
+      "Bash(maturin build *)",
+      "Bash(python3 -)",
+      "Bash(uv --version)",
+      "Bash(curl -Ls https://astral.sh/uv/install.sh)",
+      "Bash(sh)",
+      "Bash(uv pip *)",
+      "Bash(python3 *)",
+      "Bash(python -c \"import Corrfunc; print\\(Corrfunc.__version__\\)\")",
+      "Bash(python -c \"import scope; print\\('scope ok'\\)\")",
+      "Bash(python *)"
+    ]
+  }
+}

@@ -77,6 +77,5 @@ llm_context/
 # Docs build
 docs/_build/
 
-# Legacy
-scope/
-example_usage.md
+# Scratch / temp
+temp.md
