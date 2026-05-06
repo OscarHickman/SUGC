@@ -27,10 +27,12 @@ N_THREADS_CF = min(16, max(1, len(os.sched_getaffinity(0))))
 # Corrfunc requires rmax < box/2 strictly; 255.0 is the practical maximum.
 R_MAX_VALUES = [0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 255.0]
 
-rng = np.random.default_rng(42)
-coords  = rng.uniform(0, BOX_SIZE, (N, 3)).astype(np.float64, order="C")
-sv_grid = np.floor(coords / (BOX_SIZE / 3)).astype(int).clip(0, 2)
-sv_ids  = (sv_grid[:, 0] * 9 + sv_grid[:, 1] * 3 + sv_grid[:, 2]).astype(np.int32)
+K_REALISATIONS = 27   # k independent realisations
+
+rng    = np.random.default_rng(42)
+coords = rng.uniform(0, BOX_SIZE, (N, 3)).astype(np.float64, order="C")
+# Realisation IDs are independent of position — each realisation spans the full box.
+sv_ids = rng.integers(0, K_REALISATIONS, size=N).astype(np.int32)
 
 
 def timeit(fn, reps=REPEATS):

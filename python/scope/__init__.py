@@ -1,9 +1,11 @@
 """
-SCOPE: Sub-volume Aware Pair Counter for galaxy clustering.
+SCOPE: Sparse Correction Of Pair Estimators.
 
 Computes the real-space two-point correlation function ξ(r) for galaxy
-catalogues drawn from a subset of m sub-volumes out of a k-partition of a
-periodic simulation box (e.g. GALFORM on P-Millennium).
+catalogues drawn from m of k independent realisations of a periodic simulation
+box (e.g. m GALFORM runs out of k runs on the same P-Millennium backbone).
+Each realisation spans the full coordinate range of the box at 1/k of the
+total number density; realisations overlap completely in space.
 
 The estimator is the Natural Estimator  ξ = DD_corr / RR − 1,
 where:
@@ -81,16 +83,18 @@ def compute_xi(
     coords : (N, 3) float64 array
         Galaxy positions [x, y, z] in Mpc/h. Must be C-contiguous.
     subvol_ids : (N,) int32 array
-        Sub-volume index for each galaxy (integer labels 0..k−1).
-        Labels must identify 3D spatial cells — never z-slices.
+        Realisation index for each galaxy (integer labels 0..m−1, where each
+        value identifies which of the m selected realisations a galaxy belongs
+        to). Labels carry no spatial meaning — each realisation spans the full
+        box volume.
     r_bins : (n_r+1,) array
         Radial separation bin edges in Mpc/h.
     box_size : float
         Side length of the full periodic simulation box in Mpc/h.
     n_subvols : int
-        Total number of sub-volumes k that tile the full box.
+        Total number of independent realisations k.
     n_subvols_selected : int
-        Number of sub-volumes m included in `coords` (1 ≤ m ≤ k).
+        Number of realisations m included in `coords` (1 ≤ m ≤ k).
 
     Returns
     -------

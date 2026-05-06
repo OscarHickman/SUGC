@@ -19,8 +19,8 @@ from scope._scope import count_pairs_1d
 # ── Fixed parameters ──────────────────────────────────────────────────────────
 RNG_SEED  = 42
 BOX_SIZE  = 512.0      # P-Millennium Mpc/h
-N_SUBVOLS = 27         # 3×3×3 grid
-N_SUBVOLS_SELECTED = 9 # use 1/3 of the box
+N_SUBVOLS = 27         # k independent realisations
+N_SUBVOLS_SELECTED = 9 # m realisations selected (m/k = 1/3)
 
 # 30 log-spaced bins from 0.01 to 256 Mpc/h  (covers kpc/h to box/2)
 R_BINS = np.logspace(np.log10(0.01), np.log10(256.0), 31)
@@ -34,10 +34,14 @@ N_THREADS_CF = min(16, max(1, len(os.sched_getaffinity(0))))
 
 
 def make_catalogue(n, rng):
-    """Uniform random positions + sub-volume IDs on a 3×3×3 grid."""
+    """Uniform random positions with realisation IDs assigned randomly.
+
+    Each galaxy is drawn from one of N_SUBVOLS independent realisations.
+    Realisation IDs are independent of position — every realisation spans
+    the full box volume.
+    """
     coords = rng.uniform(0, BOX_SIZE, size=(n, 3)).astype(np.float64, order="C")
-    cell = np.floor(coords / (BOX_SIZE / 3)).astype(int).clip(0, 2)
-    sv_ids = (cell[:, 0] * 9 + cell[:, 1] * 3 + cell[:, 2]).astype(np.int32)
+    sv_ids = rng.integers(0, N_SUBVOLS, size=n).astype(np.int32)
     mask = sv_ids < N_SUBVOLS_SELECTED
     return coords[mask], sv_ids[mask]
 

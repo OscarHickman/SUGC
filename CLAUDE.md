@@ -28,8 +28,11 @@ SCOPE/                  ← repository root
 ├── python/scope/
 │   └── __init__.py     # ALL Python: analytic_rr_1d, compute_xi (primary API)
 │                       #             analytic_rr, compute_2pcf  (legacy 2D, kept for compat)
-├── benchmark_corrfunc.py  # SCOPE vs Corrfunc DD timing at fixed r_max range
-└── benchmark_scale.py     # SCOPE vs Corrfunc DD timing vs r_max sweep
+├── tests/performance/
+│   ├── benchmark_corrfunc.py  # SCOPE vs Corrfunc DD timing at fixed r_max range
+│   └── benchmark_scale.py     # SCOPE vs Corrfunc DD timing vs r_max sweep
+└── examples/
+    └── SCOPE.ipynb            # end-to-end demo on a uniform random field
 ```
 
 ## Build commands
