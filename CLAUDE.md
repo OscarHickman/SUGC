@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-**SCOPE** — **Sparse Correction Of Pair Estimators** — computes the real-space two-point correlation function ξ(r) for galaxy catalogues drawn from **m of k independent realisations** of a periodic N-body simulation box (e.g. GALFORM on P-Millennium, 512 Mpc/h). Only real-space (isotropic) ξ(r) is supported — no redshift-space distortions, no (r_p, π) decomposition.
+**SCOPE** — **Sparse Correction Of Pair Estimators** — computes the real-space two-point correlation function ξ(r) for galaxy catalogues drawn from **m of k independent realisations** of a periodic N-body simulation box (e.g. GALFORM on P-Millennium, 542.16 Mpc/h). Only real-space (isotropic) ξ(r) is supported — no redshift-space distortions, no (r_p, π) decomposition.
 
 Each **sub-volume** (realisation) is an independent statistical sample that spans the **full simulation box** at 1/k of the total number density — sub-volume IDs are not spatial cell labels. Galaxies from any given realisation are distributed across the entire box. Stacking all k realisations recovers the full-density catalogue.
 

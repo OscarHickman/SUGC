@@ -3,7 +3,7 @@
 A Python package (Rust backend) for computing the real-space two-point
 correlation function **ξ(r)** from galaxy catalogues drawn from a sparse
 subset of sub-volumes of a periodic N-body simulation
-(e.g. GALFORM on P-Millennium, 512 Mpc/h).
+(e.g. GALFORM on P-Millennium, 542.16 Mpc/h).
 
 ---
 
@@ -109,7 +109,7 @@ result = compute_xi(
     coords              = coords,
     subvol_ids          = subvol_ids,
     r_bins              = r_bins,
-    box_size            = 512.0,   # P-Millennium, Mpc/h
+    box_size            = 542.16,   # P-Millennium, Mpc/h
     n_subvols           = 1024,    # k — total independent realisations
     n_subvols_selected  = 8,       # m — realisations actually loaded
 )
@@ -210,7 +210,7 @@ Setting m = k gives α = β = 1, recovering the standard full-catalogue result.
 
 ## Performance
 
-Measured on a Cosma node (16 cores), P-Millennium geometry (box = 512 Mpc/h),
+Measured on a Cosma node (16 cores), P-Millennium geometry (box = 542.16 Mpc/h),
 N = 100,000 particles, 10 log-spaced r bins per decade. Median of 3 runs.
 Corrfunc `DD` is the reference 3D isotropic pair counter (AVX2 SIMD + OpenMP).
 **SCOPE does strictly more work** — it splits every pair into `DD_auto` or

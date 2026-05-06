@@ -18,7 +18,7 @@ from scope._scope import count_pairs_1d
 
 # ── Fixed parameters ──────────────────────────────────────────────────────────
 RNG_SEED  = 42
-BOX_SIZE  = 512.0      # P-Millennium Mpc/h
+BOX_SIZE  = 542.16      # P-Millennium Mpc/h
 N_SUBVOLS = 27         # k independent realisations
 N_SUBVOLS_SELECTED = 9 # m realisations selected (m/k = 1/3)
 

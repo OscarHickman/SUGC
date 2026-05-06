@@ -1,7 +1,7 @@
 """
 SCOPE vs Corrfunc — performance vs r_max sweep.
 
-P-Millennium box (512 Mpc/h).  Sweeps r_max from 0.01 Mpc/h (10 kpc/h) up to
+P-Millennium box (542.16 Mpc/h).  Sweeps r_max from 0.01 Mpc/h (10 kpc/h) up to
 256 Mpc/h (box/2, the physical maximum for periodic minimum-image).
 
 At small r_max the cell list is fine-grained → O(N) fast.
@@ -16,7 +16,7 @@ import numpy as np
 from Corrfunc.theory import DD
 from scope._scope import count_pairs_1d
 
-BOX_SIZE = 512.0       # P-Millennium Mpc/h
+BOX_SIZE = 542.16       # P-Millennium Mpc/h
 N        = 100_000
 REPEATS  = 3
 N_BINS   = 10          # 10 log r bins per decade (consistent across calls)
@@ -50,7 +50,7 @@ def n_cells(r_max):
 
 
 print("=" * 80)
-print("  SCOPE vs Corrfunc — timing vs r_max  (P-Millennium, box=512 Mpc/h)")
+print("  SCOPE vs Corrfunc — timing vs r_max  (P-Millennium, box=542.16 Mpc/h)")
 print(f"  N={N:,}  {N_BINS} log r bins per decade")
 print(f"  Corrfunc: {N_THREADS_CF} threads    SCOPE: Rayon (all available threads)")
 print(f"  Median of {REPEATS} runs")
