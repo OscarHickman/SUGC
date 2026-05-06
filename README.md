@@ -110,8 +110,8 @@ result = compute_xi(
     subvol_ids          = subvol_ids,
     r_bins              = r_bins,
     box_size            = 512.0,   # P-Millennium, Mpc/h
-    n_subvols           = 1024,    # k — total sub-volumes tiling the full box
-    n_subvols_selected  = 8,       # m — sub-volumes actually loaded
+    n_subvols           = 1024,    # k — total independent realisations
+    n_subvols_selected  = 8,       # m — realisations actually loaded
 )
 
 xi    = result["xi"]     # (n_r,) — ξ(r)
@@ -146,19 +146,15 @@ dd_auto, dd_cross = count_pairs_1d(
 
 ## Sub-volume assignment
 
-Sub-volume IDs must label **3D spatial cells** — e.g. a regular nx×ny×nz grid
-tiling the box. The correction weights assume all sub-volumes are statistically
-equivalent (same mean density, same large-scale environment).
+Sub-volume IDs label **independent statistical realisations** of the full
+simulation box — **not** spatial cells or patches. Every realisation spans
+the full coordinate range [0, box_size) in all three dimensions; realisations
+overlap completely. Stacking all k realisations recovers the full-density
+catalogue. The correction weights assume all realisations are statistically
+equivalent (same mean number density, same large-scale structure).
 
-**Good:** a 3D grid cell index such as `ix*ny*nz + iy*nz + iz`.
-
-**Avoid:** pure z-slices or any partition that correlates the label with the
-separation axis being measured.
-
-The selected m sub-volumes should be **spatially well-distributed**, not a
-contiguous block (which biases ξ at scales comparable to the sub-volume size).
 Minimum useful m is **2** — with m=1 there are no cross-pairs and the
-one-halo/two-halo decomposition is undefined.
+intra/inter-realisation decomposition is undefined.
 
 ---
 
