@@ -65,6 +65,7 @@ uv.lock
 .github/copilot-instructions.md
 .codeium/
 .windsurf/
+.test/
 
 # LLM context / scratch files
 *.prompt
