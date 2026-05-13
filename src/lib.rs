@@ -15,6 +15,17 @@ fn find_bin(value: f64, edges: &[f64]) -> Option<usize> {
     Some(edges.partition_point(|&e| e <= value) - 1)
 }
 
+/// Find which bin `value_sq` belongs to in a sorted ascending squared edge array.
+/// Avoids sqrt() call in hot loops. Pre-computed squared edges via e → e².
+/// Bin k is the half-open interval [edges_sq[k], edges_sq[k+1]).
+#[inline]
+fn find_bin_squared(value_sq: f64, edges_sq: &[f64]) -> Option<usize> {
+    if value_sq < edges_sq[0] || value_sq >= *edges_sq.last().unwrap() {
+        return None;
+    }
+    Some(edges_sq.partition_point(|&e| e <= value_sq) - 1)
+}
+
 /// Build an anisotropic cell list.
 ///
 /// Cell count per dimension is capped so the list stays within ~50 MB regardless
@@ -89,11 +100,13 @@ fn count_pairs_1d<'py>(
     let r_max = r_arr[n_r];
     let r_sq_max = r_max * r_max;
 
+    // Pre-compute squared bin edges to avoid sqrt() in hot loop
+    let r_bins_sq: Vec<f64> = r_arr.iter().map(|&x| x * x).collect();
+
     let coords_flat: Vec<[f64; 3]> = (0..n)
         .map(|i| [coords_arr[[i, 0]], coords_arr[[i, 1]], coords_arr[[i, 2]]])
         .collect();
-    let sv_flat: Vec<i32> = sv_arr.iter().copied().collect();
-    let r_bins_vec: Vec<f64> = r_arr.iter().copied().collect();
+    let sv_flat: Vec<i32> = sv_arr.to_vec();
 
     // Isotropic cell list: pass r_max for both transverse and LOS arguments.
     let (cells, n_cells, _, cell_size, _) =
@@ -139,8 +152,8 @@ fn count_pairs_1d<'py>(
                                     continue;
                                 }
 
-                                let r = r_sq.sqrt();
-                                if let Some(ir) = find_bin(r, &r_bins_vec) {
+                                // Use squared bin edges to avoid sqrt
+                                if let Some(ir) = find_bin_squared(r_sq, &r_bins_sq) {
                                     if sv_flat[j] == svi {
                                         acc.0[ir] += 1.0;
                                     } else {
@@ -215,12 +228,14 @@ fn count_pairs_2d<'py>(
     let pi_max = pi_arr[n_pi];
     let r_p_sq_max = r_p_max * r_p_max;
 
+    // Pre-compute squared r_p bin edges to avoid sqrt() in hot loop
+    let rp_bins_sq: Vec<f64> = rp_arr.iter().map(|&x| x * x).collect();
+
     let coords_flat: Vec<[f64; 3]> = (0..n)
         .map(|i| [coords_arr[[i, 0]], coords_arr[[i, 1]], coords_arr[[i, 2]]])
         .collect();
-    let sv_flat: Vec<i32> = sv_arr.iter().copied().collect();
-    let rp_bins_vec: Vec<f64> = rp_arr.iter().copied().collect();
-    let pi_bins_vec: Vec<f64> = pi_arr.iter().copied().collect();
+    let sv_flat: Vec<i32> = sv_arr.to_vec();
+    let pi_bins_vec: Vec<f64> = pi_arr.to_vec();
 
     let (cells, n_cells_xy, n_cells_z, cell_size_xy, cell_size_z) =
         build_cell_list(&coords_flat, box_size, r_p_max, pi_max);
@@ -268,10 +283,9 @@ fn count_pairs_2d<'py>(
                                     continue;
                                 }
 
-                                let r_p = r_p_sq.sqrt();
-
+                                // Use squared bin edges for r_p to avoid sqrt
                                 if let (Some(irp), Some(ipi)) = (
-                                    find_bin(r_p, &rp_bins_vec),
+                                    find_bin_squared(r_p_sq, &rp_bins_sq),
                                     find_bin(pi, &pi_bins_vec),
                                 ) {
                                     let flat = irp * n_pi + ipi;

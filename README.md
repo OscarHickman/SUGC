@@ -208,30 +208,6 @@ Setting m = k gives α = β = 1, recovering the standard full-catalogue result.
 
 ---
 
-## Performance
-
-Measured on a Cosma node (16 cores), P-Millennium geometry (box = 542.16 Mpc/h),
-N = 100,000 particles, 10 log-spaced r bins per decade. Median of 3 runs.
-Corrfunc `DD` is the reference 3D isotropic pair counter (AVX2 SIMD + OpenMP).
-**SCOPE does strictly more work** — it splits every pair into `DD_auto` or
-`DD_cross` simultaneously — so the comparison slightly understates SCOPE's
-raw pair-counting speed.
-
-| r_max (Mpc/h) | cells | SCOPE (ms) | CF 1-thread (ms) | CF 16-thread (ms) | vs CF-1t | vs CF-16t |
-|:---:|:---:|---:|---:|---:|---:|---:|
-| 0.01 | 128 | 88 | 201 | 251 | 2.3× faster | 2.9× faster |
-| 0.1  | 128 | 87 | 189 | 251 | 2.2× faster | 2.9× faster |
-| 0.5  | 128 | 92 | 192 | 247 | 2.1× faster | 2.7× faster |
-| 1    | 128 | 87 | 187 | 246 | 2.1× faster | 2.8× faster |
-| 2    | 128 | 88 | 191 | 237 | 2.2× faster | 2.7× faster |
-| 5    | 102 | 61 | 192 | 246 | 3.1× faster | 4.0× faster |
-| 10   |  51 | 25 |  80 |  98 | 3.2× faster | 3.9× faster |
-| 20   |  25 | 17 |  86 |  63 | 5.0× faster | 3.7× faster |
-| 50   |  10 | 27 | 230 |  42 | 8.5× faster | 1.6× slower |
-| 100  |   5 | 131 | 637 |  50 | 4.9× faster | 2.6× slower |
-| 200  |   3 | 769 | 2943 | 189 | 3.8× faster | 4.1× slower |
-| 255  |   3 | 975 | 5435 | 346 | 5.6× faster | 2.8× slower |
-
 **What drives the pattern:**
 
 - **Small r_max (≤ 2 Mpc/h) — cells capped at 128.** The cell list is bounded
