@@ -1,4 +1,4 @@
-# SCOPE — Sparse Correction Of Pair Estimators
+# SCOPE — Sparse Clustering On Periodic-box Estimator
 
 A Python package (Rust backend) for computing the real-space two-point
 correlation function **ξ(r)** from galaxy catalogues drawn from a sparse
