@@ -179,7 +179,7 @@ jobs:
       - name: Install built wheel
         run: python -m pip install dist/scope-*.whl
       - name: Run unit tests
-        run: python -m pytest tests/unit/test_scope.py
+        run: python -m pytest tests/unit/ -v
 
   sdist:
     runs-on: ubuntu-latest

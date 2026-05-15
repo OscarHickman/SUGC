@@ -175,7 +175,9 @@ SCOPE/
 │                          #         compute_xi_smu, analytic_rr_smu (RSD)
 │                          #         compute_2pcf, analytic_rr (legacy r_p, π)
 ├── tests/
-│   ├── unit/test_scope.py     # pytest unit tests
+│   ├── unit/test_pairs_1d.py  # pytest unit tests: count_pairs_1d, analytic_rr_1d, compute_xi
+│   │           test_pairs_2d.py  # pytest unit tests: count_pairs_2d, analytic_rr, compute_2pcf
+│   │           test_pairs_smu.py # pytest unit tests: count_pairs_smu, analytic_rr_smu, compute_xi_smu
 │   └── performance/
 │       ├── benchmark_corrfunc.py  # SCOPE vs Corrfunc DD — timing at fixed range
 │       └── benchmark_scale.py     # SCOPE vs Corrfunc DD — timing vs r_max sweep

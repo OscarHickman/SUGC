@@ -9,7 +9,7 @@ classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
-dependencies = ["numpy>=1.23"]
+dependencies = ["numpy>=1.23", "matplotlib>=3.8"]
 dynamic = ["version"]
 
 [tool.maturin]

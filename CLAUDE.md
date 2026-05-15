@@ -68,7 +68,7 @@ export UV_LINK_MODE=copy
 
 Run the unit test suite with:
 ```bash
-pytest tests/unit/test_scope.py -v
+pytest tests/unit/ -v
 ```
 
 Physics acceptance criterion: |ξ| < 0.05 in every bin with RR > 100 on a uniform Poisson field (bins at very small r with N~200k will be noise-dominated and are skipped). The full test suite covers pair counters, analytic RR, and all high-level estimators.
