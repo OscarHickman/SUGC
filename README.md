@@ -164,15 +164,24 @@ intra/inter-realisation decomposition is undefined.
 SCOPE/
 ├── Cargo.toml             # Rust deps: pyo3, numpy, rayon
 ├── pyproject.toml         # maturin build backend
-├── src/lib.rs             # Rust: cell-list + count_pairs_1d + count_pairs_2d
+├── src/
+│   ├── lib.rs             # module declarations + #[pymodule]
+│   ├── cell_list.rs       # CellList, HALF_SHELL, find_bin helpers
+│   ├── pairs_1d.rs        # count_pairs_1d (real-space ξ(r))
+│   ├── pairs_2d.rs        # count_pairs_2d (legacy r_p, π)
+│   └── pairs_smu.rs       # count_pairs_smu (redshift-space s, μ)
 ├── python/scope/
 │   └── __init__.py        # Python: compute_xi, analytic_rr_1d (primary API)
-│                          #         compute_2pcf, analytic_rr  (legacy 2D)
-├── tests/performance/
-│   ├── benchmark_corrfunc.py  # SCOPE vs Corrfunc DD — timing at fixed range
-│   └── benchmark_scale.py     # SCOPE vs Corrfunc DD — timing vs r_max sweep
+│                          #         compute_xi_smu, analytic_rr_smu (RSD)
+│                          #         compute_2pcf, analytic_rr (legacy r_p, π)
+├── tests/
+│   ├── unit/test_scope.py     # pytest unit tests
+│   └── performance/
+│       ├── benchmark_corrfunc.py  # SCOPE vs Corrfunc DD — timing at fixed range
+│       └── benchmark_scale.py     # SCOPE vs Corrfunc DD — timing vs r_max sweep
 └── examples/
-    └── SCOPE.ipynb            # end-to-end demo on a uniform random field
+    ├── pairs_1d.ipynb         # end-to-end demo: real-space ξ(r)
+    └── pairs_smu.ipynb        # end-to-end demo: redshift-space ξ(s, μ)
 ```
 
 ---
@@ -229,6 +238,43 @@ Setting m = k gives α = β = 1, recovering the standard full-catalogue result.
   and 16-thread Corrfunc pulls ahead. In practice, ξ(r) at r > 50 Mpc/h
   can be computed with a single call using the full r-range, so this regime
   is not the bottleneck for typical GALFORM analyses.
+
+---
+
+## Redshift-space distortions: ξ(s, μ)
+
+`compute_xi_smu` computes the anisotropic correlation function in redshift-space
+separation s and cosine angle to the line-of-sight μ = |Δz|/s, then projects
+onto the monopole ξ₀(s) and quadrupole ξ₂(s).
+
+The caller must pre-apply the RSD displacement before passing positions:
+
+```python
+# z_rsd = (z_real + v_pec_z / H) % box_size   (all in Mpc/h)
+coords_rsd = coords.copy()
+coords_rsd[:, 2] = (coords[:, 2] + v_pec_z / H) % box_size
+
+from scope import compute_xi_smu
+
+result = compute_xi_smu(
+    coords              = coords_rsd,   # redshift-space [x, y, z_rsd]
+    subvol_ids          = subvol_ids,
+    s_bins              = s_bins,       # (n_s+1,) separation edges in Mpc/h
+    box_size            = 542.16,
+    n_subvols           = 1024,
+    n_subvols_selected  = 8,
+    n_mu_bins           = 100,          # μ bins in [0, mu_max]
+    mu_max              = 1.0,
+)
+
+xi_smu = result["xi_smu"]   # (n_s, n_mu)  ξ(s, μ)
+xi0    = result["xi0"]      # (n_s,)       monopole ξ₀(s)
+xi2    = result["xi2"]      # (n_s,)       quadrupole ξ₂(s)
+s_mid  = result["s_mid"]    # (n_s,)       geometric-mean bin centres
+mu_mid = result["mu_mid"]   # (n_mu,)      μ bin centres
+```
+
+The same α/β sub-volume correction weights are applied as for `compute_xi`.
 
 ---
 

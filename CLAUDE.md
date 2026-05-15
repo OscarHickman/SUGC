@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-**SCOPE** — **Sparse Correction Of Pair Estimators** — computes the real-space two-point correlation function ξ(r) for galaxy catalogues drawn from **m of k independent realisations** of a periodic N-body simulation box (e.g. GALFORM on P-Millennium, 542.16 Mpc/h). Only real-space (isotropic) ξ(r) is supported — no redshift-space distortions, no (r_p, π) decomposition.
+**SCOPE** — **Sparse Correction Of Pair Estimators** — computes two-point correlation functions for galaxy catalogues drawn from **m of k independent realisations** of a periodic N-body simulation box (e.g. GALFORM on P-Millennium, 542.16 Mpc/h). Supported statistics: real-space ξ(r), redshift-space ξ(s, μ) with Legendre multipoles ξ₀(s)/ξ₂(s), and legacy ξ(r_p, π)/w_p(r_p).
 
 Each **sub-volume** (realisation) is an independent statistical sample that spans the **full simulation box** at 1/k of the total number density — sub-volume IDs are not spatial cell labels. Galaxies from any given realisation are distributed across the entire box. Stacking all k realisations recovers the full-density catalogue.
 
@@ -24,15 +24,26 @@ The repository root is the package root — there is no subdirectory mirror. Wor
 SCOPE/                  ← repository root
 ├── Cargo.toml          # Rust deps: pyo3, numpy, rayon
 ├── pyproject.toml      # maturin build backend, module-name = scope._scope
-├── src/lib.rs          # ALL Rust: cell-list builder + count_pairs_1d + count_pairs_2d
+├── src/
+│   ├── lib.rs          # module declarations + #[pymodule]
+│   ├── cell_list.rs    # CellList, HALF_SHELL, find_bin helpers
+│   ├── pairs_1d.rs     # count_pairs_1d  (real-space ξ(r))
+│   ├── pairs_2d.rs     # count_pairs_2d  (legacy r_p, π)
+│   └── pairs_smu.rs    # count_pairs_smu (redshift-space s, μ)
 ├── python/scope/
 │   └── __init__.py     # ALL Python: analytic_rr_1d, compute_xi (primary API)
-│                       #             analytic_rr, compute_2pcf  (legacy 2D, kept for compat)
-├── tests/performance/
-│   ├── benchmark_corrfunc.py  # SCOPE vs Corrfunc DD timing at fixed r_max range
-│   └── benchmark_scale.py     # SCOPE vs Corrfunc DD timing vs r_max sweep
+│                       #             analytic_rr_smu, compute_xi_smu (RSD s, μ)
+│                       #             analytic_rr, compute_2pcf  (legacy r_p, π)
+├── tests/
+│   ├── unit/test_pairs_1d.py  # pytest unit tests: count_pairs_1d, analytic_rr_1d, compute_xi
+│   ├── unit/test_pairs_2d.py  # pytest unit tests: count_pairs_2d, analytic_rr, compute_2pcf
+│   └── unit/test_pairs_smu.py # pytest unit tests: count_pairs_smu, analytic_rr_smu, compute_xi_smu
+│   └── performance/
+│       ├── benchmark_corrfunc.py  # SCOPE vs Corrfunc DD timing at fixed r_max range
+│       └── benchmark_scale.py     # SCOPE vs Corrfunc DD timing vs r_max sweep
 └── examples/
-    └── SCOPE.ipynb            # end-to-end demo on a uniform random field
+    ├── pairs_1d.ipynb         # end-to-end demo: real-space ξ(r) on a Poisson field
+    └── pairs_smu.ipynb        # end-to-end demo: redshift-space ξ(s, μ) on a Poisson field
 ```
 
 ## Build commands
@@ -55,16 +66,26 @@ On Cosma (Lustre network FS), suppress a harmless hardlink warning:
 export UV_LINK_MODE=copy
 ```
 
-There are no lint or test commands defined — verification is done by running the package against a uniform random field and checking that mean |ξ| < 0.02 for bins with RR > 100 (bins at r < ~0.5 Mpc/h with N~200k will have too few pairs to meet the threshold and are noise-dominated).
+Run the unit test suite with:
+```bash
+pytest tests/unit/test_scope.py -v
+```
+
+Physics acceptance criterion: |ξ| < 0.05 in every bin with RR > 100 on a uniform Poisson field (bins at very small r with N~200k will be noise-dominated and are skipped). The full test suite covers pair counters, analytic RR, and all high-level estimators.
 
 ## Architecture
 
 **Data flow:**
 
-1. User calls `compute_xi(coords, subvol_ids, r_bins, box_size, n_subvols, n_subvols_selected)` in `__init__.py`
-2. Python computes α and β correction weights, then calls the Rust function:
-3. `count_pairs_1d` (Rust, `src/lib.rs`) builds an isotropic cell list and counts pairs in parallel via Rayon, routing each pair to `dd_auto` (same subvol ID) or `dd_cross` (different subvol IDs). Uses a thread-local fold/reduce pattern — no locks.
-4. Python applies `dd_corr = α·dd_auto + β·dd_cross`, computes analytic RR, returns ξ(r).
+Real-space (`compute_xi`):
+1. Python computes α and β correction weights, calls `count_pairs_1d` (Rust, `src/pairs_1d.rs`).
+2. Rust builds an isotropic cell list and counts pairs in parallel via Rayon, routing each pair to `dd_auto` (same subvol ID) or `dd_cross` (different IDs). Thread-local fold/reduce — no locks.
+3. Python applies `dd_corr = α·dd_auto + β·dd_cross`, computes analytic RR, returns ξ(r).
+
+Redshift-space (`compute_xi_smu`):
+1. Caller pre-applies the RSD shift: `z_rsd = (z + v_pec_z / H) % box_size`. LOS axis is z.
+2. Same α/β weights and Rust call structure as above, using `count_pairs_smu` (`src/pairs_smu.rs`) which bins pairs in (s, μ = |Δz|/s) instead of isotropic r.
+3. Python computes ξ(s, μ) and projects onto Legendre multipoles ξ₀(s) and ξ₂(s).
 
 **Cell list:** Isotropic — same cell size in all 3 dimensions, set to r_max. Each particle searches its 3×3×3 = 27 neighbouring cells. Minimum 3 cells per dimension to avoid double-counting under periodic wrapping. Periodic BC via minimum-image convention. Each pair counted once (i < j).
 

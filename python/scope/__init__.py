@@ -24,14 +24,17 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-from scope._scope import count_pairs_1d, count_pairs_2d  # Rust extension
+from scope._scope import count_pairs_1d, count_pairs_2d, count_pairs_smu  # Rust extension
 
 __all__ = [
     "count_pairs_1d",
     "count_pairs_2d",
+    "count_pairs_smu",
     "analytic_rr_1d",
+    "analytic_rr_smu",
     "analytic_rr",
     "compute_xi",
+    "compute_xi_smu",
     "compute_2pcf",
 ]
 
@@ -260,4 +263,150 @@ def compute_2pcf(
         "dd_cross": dd_cross,
         "dd_corr": dd_corr,
         "rr": rr,
+    }
+
+
+# ── Redshift-space distortions: (s, μ) estimator ────────────────────────────
+
+def analytic_rr_smu(
+    s_bins: NDArray[np.float64],
+    mu_max: float,
+    n_mu_bins: int,
+    box_size: float,
+    n_galaxies: int,
+) -> NDArray[np.float64]:
+    """
+    Analytic RR pair counts for a uniform Poisson process in (s, μ) bins.
+
+    For random points in a periodic box, μ = |Δz|/s is uniformly distributed
+    on [0, 1], so the expected pair count in bin (s_i, μ_j) is:
+
+        RR(s, μ) = N(N−1)/2 · V_shell(s) · Δμ / V_box
+
+    Parameters
+    ----------
+    s_bins     : (n_s+1,) array — redshift-space separation bin edges in Mpc/h
+    mu_max     : float           — upper edge of the μ range (typically 1.0)
+    n_mu_bins  : int             — number of uniform μ bins in [0, mu_max]
+    box_size   : float           — periodic box side length in Mpc/h
+    n_galaxies : int             — number of galaxies in the catalogue
+
+    Returns
+    -------
+    rr : (n_s, n_mu_bins) float64 array
+    """
+    s_bins = np.asarray(s_bins, dtype=np.float64)
+    v_shell = (4.0 * np.pi / 3.0) * (s_bins[1:] ** 3 - s_bins[:-1] ** 3)
+    prefactor = n_galaxies * (n_galaxies - 1) / (2.0 * box_size**3)
+    dmu = mu_max / n_mu_bins
+    return (prefactor * v_shell)[:, np.newaxis] * np.full(n_mu_bins, dmu)
+
+
+def compute_xi_smu(
+    coords: NDArray[np.float64],
+    subvol_ids: NDArray[np.int32],
+    s_bins: NDArray[np.float64],
+    box_size: float,
+    n_subvols: int,
+    n_subvols_selected: int,
+    n_mu_bins: int = 100,
+    mu_max: float = 1.0,
+) -> dict[str, NDArray[np.float64]]:
+    """
+    Compute ξ(s, μ) and its Legendre multipoles ξ₀(s) and ξ₂(s).
+
+    Caller must pre-apply the RSD displacement before passing coords:
+        z_rsd = (z + v_pec_z / H(z)) % box_size   (all in Mpc/h)
+
+    The LOS is the z-axis. μ = |Δz_rsd| / s ∈ [0, mu_max].
+
+    Parameters
+    ----------
+    coords : (N, 3) float64 array
+        Redshift-space positions [x, y, z_rsd] in Mpc/h. Must be C-contiguous.
+    subvol_ids : (N,) int32 array
+        Realisation index for each galaxy.
+    s_bins : (n_s+1,) array
+        Redshift-space separation bin edges in Mpc/h.
+    box_size : float
+        Periodic box side length in Mpc/h.
+    n_subvols : int
+        Total number of independent realisations k.
+    n_subvols_selected : int
+        Number of realisations m included in `coords`.
+    n_mu_bins : int
+        Number of uniform μ bins in [0, mu_max]. Default 100.
+    mu_max : float
+        Upper edge of the μ range. Default 1.0.
+
+    Returns
+    -------
+    dict with keys
+        ``xi_smu``   — (n_s, n_mu) ξ(s, μ) grid
+        ``xi0``      — (n_s,) monopole ξ₀(s)
+        ``xi2``      — (n_s,) quadrupole ξ₂(s)
+        ``dd_auto``  — (n_s, n_mu) same-subvol raw pair counts
+        ``dd_cross`` — (n_s, n_mu) cross-subvol raw pair counts
+        ``dd_corr``  — (n_s, n_mu) sub-volume corrected pair counts
+        ``rr``       — (n_s, n_mu) analytic RR pair counts
+        ``s_mid``    — (n_s,) geometric-mean bin centres in Mpc/h
+        ``mu_mid``   — (n_mu,) μ bin centres
+    """
+    coords     = np.ascontiguousarray(coords,     dtype=np.float64)
+    subvol_ids = np.ascontiguousarray(subvol_ids, dtype=np.int32)
+    s_bins     = np.asarray(s_bins, dtype=np.float64)
+
+    k = int(n_subvols)
+    m = int(n_subvols_selected)
+    if m < 1 or m > k:
+        raise ValueError(f"n_subvols_selected={m} must be in [1, {k}]")
+
+    n_selected = len(coords)
+
+    # ------------------------------------------------------------------ #
+    #  Rust pair counter                                                   #
+    # ------------------------------------------------------------------ #
+    dd_auto, dd_cross = count_pairs_smu(
+        coords, subvol_ids, s_bins, n_mu_bins, mu_max, float(box_size)
+    )
+
+    # ------------------------------------------------------------------ #
+    #  Sub-volume correction (same α/β as compute_xi)                     #
+    # ------------------------------------------------------------------ #
+    alpha = m / k
+    beta  = m * (k - 1) / (k * (m - 1)) if m > 1 else 0.0
+    dd_corr: NDArray[np.float64] = alpha * dd_auto + beta * dd_cross
+
+    # ------------------------------------------------------------------ #
+    #  ξ(s, μ) via natural estimator                                      #
+    # ------------------------------------------------------------------ #
+    rr = analytic_rr_smu(s_bins, mu_max, n_mu_bins, float(box_size), n_selected)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        xi_smu: NDArray[np.float64] = dd_corr / rr - 1.0
+    xi_smu[~np.isfinite(xi_smu)] = np.nan
+
+    # ------------------------------------------------------------------ #
+    #  Legendre projection                                                 #
+    # ------------------------------------------------------------------ #
+    dmu    = mu_max / n_mu_bins
+    mu_mid = np.linspace(dmu / 2.0, mu_max - dmu / 2.0, n_mu_bins)
+    L0 = np.ones(n_mu_bins)
+    L2 = 0.5 * (3.0 * mu_mid**2 - 1.0)
+
+    xi0: NDArray[np.float64] = np.nansum(xi_smu * L0[np.newaxis, :] * dmu, axis=1)
+    xi2: NDArray[np.float64] = 5.0 * np.nansum(xi_smu * L2[np.newaxis, :] * dmu, axis=1)
+
+    s_mid: NDArray[np.float64] = np.sqrt(s_bins[:-1] * s_bins[1:])
+
+    return {
+        "xi_smu":    xi_smu,
+        "xi0":       xi0,
+        "xi2":       xi2,
+        "dd_auto":   dd_auto,
+        "dd_cross":  dd_cross,
+        "dd_corr":   dd_corr,
+        "rr":        rr,
+        "s_mid":     s_mid,
+        "mu_mid":    mu_mid,
     }
