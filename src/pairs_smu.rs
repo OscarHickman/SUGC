@@ -4,24 +4,6 @@ use rayon::prelude::*;
 
 use crate::cell_list::{CellList, HALF_SHELL, find_bin_squared};
 
-/// Count galaxy pairs in 2D (s, μ) redshift-space bins, split by sub-volume membership.
-///
-/// Uses an isotropic flat cell-list and half-shell traversal. LOS axis is z.
-/// Caller must pre-apply the RSD shift and wrap z into [0, box_size):
-///     z_rsd = (z + v_pec_z / H(z)) % box_size   (all in Mpc/h)
-///
-/// Parameters
-/// ----------
-/// coords : (N, 3) float64 array — redshift-space positions [x, y, z_rsd].
-/// subvol_ids : (N,) int32 array — sub-volume index.
-/// s_bins : (n_s+1,) float64 array — separation bin edges in Mpc/h.
-/// n_mu_bins : int — number of uniform μ = |Δz|/s bins in [0, mu_max].
-/// mu_max : float — maximum μ (typically 1.0).
-/// box_size : float — periodic box side length.
-///
-/// Returns
-/// -------
-/// (dd_auto, dd_cross) : two (n_s, n_mu_bins) float64 arrays
 #[pyfunction]
 #[pyo3(signature = (coords, subvol_ids, s_bins, n_mu_bins, mu_max, box_size))]
 pub fn count_pairs_smu<'py>(
@@ -47,7 +29,6 @@ pub fn count_pairs_smu<'py>(
         .collect();
     let sv_flat: Vec<i32> = sv_arr.to_vec();
 
-    // Isotropic cell list: search radius s_max in all three dimensions.
     let cl = CellList::build(&coords_flat, box_size, s_max, s_max);
     let half_box = box_size * 0.5;
     let n_xy = cl.n_xy;
@@ -80,21 +61,20 @@ pub fn count_pairs_smu<'py>(
                         if let Some(is) = find_bin_squared(s_sq, &s_sq_bins) {
                             let s = s_sq.sqrt();
                             let mu = dz.abs() / s;
-                            if mu >= mu_max { return; }
-                            let imu = ((mu / mu_max) * n_mu as f64) as usize;
-                            let imu = imu.min(n_mu - 1);
-                            let flat = is * n_mu + imu;
-                            if sv_flat[j] == svi { acc.0[flat] += 1.0; } else { acc.1[flat] += 1.0; }
+                            if mu < mu_max {
+                                let imu = (mu / mu_max * n_mu as f64) as usize;
+                                let imu = imu.min(n_mu - 1);
+                                let flat = is * n_mu + imu;
+                                if sv_flat[j] == svi { acc.0[flat] += 1.0; } else { acc.1[flat] += 1.0; }
+                            }
                         }
                     };
 
-                    // Self cell: j > i only
                     let c0 = cl.idx(ix, iy, iz);
                     for &j in cl.particles(c0) {
                         if j > i { count(j); }
                     }
 
-                    // 13 forward half-shell cells: all j
                     for &(dix, diy, diz) in &HALF_SHELL {
                         let nx = (ix as i32 + dix).rem_euclid(n_xy as i32) as usize;
                         let ny = (iy as i32 + diy).rem_euclid(n_xy as i32) as usize;
@@ -103,7 +83,6 @@ pub fn count_pairs_smu<'py>(
                         for &j in cl.particles(nc) { count(j); }
                     }
                 }
-
                 acc
             },
         )

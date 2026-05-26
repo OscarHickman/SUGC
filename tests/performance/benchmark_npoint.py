@@ -3,8 +3,8 @@ import time
 from scope import count_npoint
 
 def benchmark():
-    n_gal = 20000
-    box_size = 100.0
+    n_gal = 100000
+    box_size = 500.0
     coords = np.random.uniform(0, box_size, (n_gal, 3)).astype(np.float64)
     subvol_ids = np.random.randint(0, 8, n_gal).astype(np.int32)
     r_bins = np.logspace(-1, 1, 11).astype(np.float64) # 0.1 to 10 Mpc/h
