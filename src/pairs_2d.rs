@@ -4,22 +4,6 @@ use rayon::prelude::*;
 
 use crate::cell_list::{CellList, HALF_SHELL, find_bin, find_bin_squared};
 
-/// Count galaxy pairs in 2D (r_p, π) bins, split by sub-volume membership.
-///
-/// Uses an anisotropic flat cell-list and half-shell traversal. LOS axis is z.
-/// Periodic boundary conditions applied via minimum-image.
-///
-/// Parameters
-/// ----------
-/// coords : (N, 3) float64 C-contiguous array — galaxy positions [x, y, z].
-/// subvol_ids : (N,) int32 array — sub-volume index.
-/// r_p_bins : (n_rp+1,) float64 array — transverse bin edges in Mpc/h.
-/// pi_bins : (n_pi+1,) float64 array — LOS bin edges in the same unit.
-/// box_size : float — periodic box side length.
-///
-/// Returns
-/// -------
-/// (dd_auto, dd_cross) : two (n_rp, n_pi) float64 arrays
 #[pyfunction]
 #[pyo3(signature = (coords, subvol_ids, r_p_bins, pi_bins, box_size))]
 pub fn count_pairs_2d<'py>(
@@ -51,63 +35,152 @@ pub fn count_pairs_2d<'py>(
         .collect();
     let sv_flat: Vec<i32> = sv_arr.to_vec();
 
-    let cl = CellList::build(&coords_flat, box_size, r_p_max, pi_max);
+    let mut cl = CellList::build(&coords_flat, box_size, r_p_max, pi_max);
+
+    // Z-sorting inside cells
+    for c in 0..(cl.offsets.len() - 1) {
+        let start = cl.offsets[c];
+        let end = cl.offsets[c+1];
+        cl.indices[start..end].sort_unstable_by(|&a, &b| {
+            coords_flat[a][2].partial_cmp(&coords_flat[b][2]).unwrap_or(std::cmp::Ordering::Equal)
+        });
+    }
+
     let half_box = box_size * 0.5;
     let n_xy = cl.n_xy;
     let n_z = cl.n_z;
+    let n_total_cells = n_xy * n_xy * n_z;
 
-    let (auto_flat, cross_flat) = (0..n)
+    // Contiguous Structure-of-Arrays reordering
+    let mut xs = vec![0.0; n];
+    let mut ys = vec![0.0; n];
+    let mut zs = vec![0.0; n];
+    let mut svs = vec![0i32; n];
+    let mut oidx = vec![0usize; n];
+    for (k, &i) in cl.indices.iter().enumerate() {
+        xs[k] = coords_flat[i][0];
+        ys[k] = coords_flat[i][1];
+        zs[k] = coords_flat[i][2];
+        svs[k] = sv_flat[i];
+        oidx[k] = i;
+    }
+
+    let needs_pbc = 2.0 * pi_max > half_box || 2.0 * r_p_max > half_box;
+
+    let (auto_flat, cross_flat) = (0..n_total_cells)
         .into_par_iter()
         .fold(
             || (vec![0.0f64; n_rp * n_pi], vec![0.0f64; n_rp * n_pi]),
-            |mut acc, i| {
-                let [xi, yi, zi] = coords_flat[i];
-                let svi = sv_flat[i];
+            |mut acc, c1| {
+                let start1 = cl.offsets[c1];
+                let end1 = cl.offsets[c1+1];
+                if start1 == end1 { return acc; }
+                let iz1 = c1 % n_z;
+                let iy1 = (c1 / n_z) % n_xy;
+                let ix1 = c1 / (n_z * n_xy);
 
-                let ix = ((xi / cl.size_xy) as usize).min(n_xy - 1);
-                let iy = ((yi / cl.size_xy) as usize).min(n_xy - 1);
-                let iz = ((zi / cl.size_z)  as usize).min(n_z  - 1);
+                let (t_auto, t_cross) = &mut acc;
 
-                {
-                    let mut count = |j: usize| {
-                        let [xj, yj, zj] = coords_flat[j];
-                        let mut dx = xj - xi;
-                        let mut dy = yj - yi;
-                        let mut dz = zj - zi;
-                        if dx >  half_box { dx -= box_size; } else if dx < -half_box { dx += box_size; }
-                        if dy >  half_box { dy -= box_size; } else if dy < -half_box { dy += box_size; }
-                        if dz >  half_box { dz -= box_size; } else if dz < -half_box { dz += box_size; }
-
-                        let r_p_sq = dx*dx + dy*dy;
-                        let pi = dz.abs();
-
-                        if r_p_sq >= r_p_sq_max || pi >= pi_max { return; }
-
-                        if let (Some(irp), Some(ipi)) = (
-                            find_bin_squared(r_p_sq, &rp_bins_sq),
-                            find_bin(pi, &pi_bins_vec),
-                        ) {
-                            let flat = irp * n_pi + ipi;
-                            if sv_flat[j] == svi { acc.0[flat] += 1.0; } else { acc.1[flat] += 1.0; }
-                        }
-                    };
+                for i in start1..end1 {
+                    let xi = xs[i]; let yi = ys[i]; let zi = zs[i];
+                    let svi = svs[i]; let i_orig = oidx[i];
 
                     // Self cell: j > i only
-                    let c0 = cl.idx(ix, iy, iz);
-                    for &j in cl.particles(c0) {
-                        if j > i { count(j); }
+                    for j in start1..end1 {
+                        if oidx[j] > i_orig {
+                            let mut dx = xs[j] - xi;
+                            let mut dy = ys[j] - yi;
+                            let mut dz = zs[j] - zi;
+                            if needs_pbc {
+                                if dx > half_box { dx -= box_size; } else if dx < -half_box { dx += box_size; }
+                                if dy > half_box { dy -= box_size; } else if dy < -half_box { dy += box_size; }
+                                if dz > half_box { dz -= box_size; } else if dz < -half_box { dz += box_size; }
+                            }
+                            let r_p_sq = dx*dx + dy*dy;
+                            let pi = dz.abs();
+
+                            if r_p_sq >= r_p_sq_max || pi >= pi_max { continue; }
+
+                            if let (Some(irp), Some(ipi)) = (
+                                find_bin_squared(r_p_sq, &rp_bins_sq),
+                                find_bin(pi, &pi_bins_vec),
+                            ) {
+                                let flat = irp * n_pi + ipi;
+                                if svs[j] == svi { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
+                            }
+                        }
                     }
 
-                    // 13 forward half-shell cells: all j
+                    // 13 neighboring cells
                     for &(dix, diy, diz) in &HALF_SHELL {
-                        let nx = (ix as i32 + dix).rem_euclid(n_xy as i32) as usize;
-                        let ny = (iy as i32 + diy).rem_euclid(n_xy as i32) as usize;
-                        let nz = (iz as i32 + diz).rem_euclid(n_z  as i32) as usize;
-                        let nc = cl.idx(nx, ny, nz);
-                        for &j in cl.particles(nc) { count(j); }
+                        let mut nx = ix1 as i32 + dix; let mut ox = 0.0;
+                        if nx < 0 { nx += n_xy as i32; ox = -box_size; }
+                        else if nx >= n_xy as i32 { nx -= n_xy as i32; ox = box_size; }
+
+                        let mut ny = iy1 as i32 + diy; let mut oy = 0.0;
+                        if ny < 0 { ny += n_xy as i32; oy = -box_size; }
+                        else if ny >= n_xy as i32 { ny -= n_xy as i32; oy = box_size; }
+
+                        let mut nz = iz1 as i32 + diz; let mut oz = 0.0;
+                        if nz < 0 { nz += n_z as i32; oz = -box_size; }
+                        else if nz >= n_z as i32 { nz -= n_z as i32; oz = box_size; }
+
+                        let c2 = (nx as usize) * n_xy * n_z + (ny as usize) * n_z + (nz as usize);
+                        let start2 = cl.offsets[c2];
+                        let end2 = cl.offsets[c2+1];
+                        if start2 == end2 { continue; }
+
+                        if needs_pbc {
+                            for j_loc in 0..(end2 - start2) {
+                                let kj = start2 + j_loc;
+                                let mut dx = xs[kj] - xi + ox;
+                                if dx > half_box { dx -= box_size; } else if dx < -half_box { dx += box_size; }
+                                let mut dy = ys[kj] - yi + oy;
+                                if dy > half_box { dy -= box_size; } else if dy < -half_box { dy += box_size; }
+                                let mut dz = zs[kj] - zi + oz;
+                                if dz > half_box { dz -= box_size; } else if dz < -half_box { dz += box_size; }
+
+                                let r_p_sq = dx*dx + dy*dy;
+                                let pi = dz.abs();
+
+                                if r_p_sq >= r_p_sq_max || pi >= pi_max { continue; }
+
+                                if let (Some(irp), Some(ipi)) = (
+                                    find_bin_squared(r_p_sq, &rp_bins_sq),
+                                    find_bin(pi, &pi_bins_vec),
+                                ) {
+                                    let flat = irp * n_pi + ipi;
+                                    if svs[kj] == svi { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
+                                }
+                            }
+                        } else {
+                            let cell2_zs = &zs[start2..end2];
+                            let z_min = zi - pi_max - oz;
+                            let z_max = zi + pi_max - oz;
+                            let j_start_loc = cell2_zs.partition_point(|&z| z < z_min);
+                            for j_loc in j_start_loc..cell2_zs.len() {
+                                if unsafe { *cell2_zs.get_unchecked(j_loc) } > z_max { break; }
+                                let kj = start2 + j_loc;
+
+                                let dx = xs[kj] - xi + ox;
+                                let dy = ys[kj] - yi + oy;
+                                let dz = zs[kj] - zi + oz;
+                                let r_p_sq = dx*dx + dy*dy;
+                                let pi = dz.abs();
+
+                                if r_p_sq >= r_p_sq_max || pi >= pi_max { continue; }
+
+                                if let (Some(irp), Some(ipi)) = (
+                                    find_bin_squared(r_p_sq, &rp_bins_sq),
+                                    find_bin(pi, &pi_bins_vec),
+                                ) {
+                                    let flat = irp * n_pi + ipi;
+                                    if svs[kj] == svi { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
+                                }
+                            }
+                        }
                     }
                 }
-
                 acc
             },
         )
