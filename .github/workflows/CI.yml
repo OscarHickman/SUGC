@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install lint dependencies
-        run: uv pip install ruff black
+        run: uv pip install --system ruff black
       - name: Run Ruff
         run: ruff check python/ tests/
       - name: Run Black
@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install test dependencies
-        run: uv pip install pytest numpy matplotlib
+        run: uv pip install --system pytest numpy matplotlib
       - name: Build extension wheel
         uses: PyO3/maturin-action@v1
         with:
@@ -47,6 +47,6 @@ jobs:
           args: --release --out dist
           container: off
       - name: Install built wheel
-        run: uv pip install dist/sugc-*.whl
+        run: uv pip install --system dist/sugc-*.whl
       - name: Run unit tests
         run: python -m pytest tests/unit/ -v
