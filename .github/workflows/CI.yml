@@ -29,9 +29,9 @@ jobs:
       - name: Install lint dependencies
         run: python -m pip install ruff black
       - name: Run Ruff
-        run: ruff check .
+        run: ruff check python/ tests/
       - name: Run Black
-        run: black --check .
+        run: black --check python/ tests/
 
   linux:
     runs-on: ${{ matrix.platform.runner }}
@@ -210,6 +210,12 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: 'wheels-*/*'
+      - name: Create GitHub Release
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wheels-*/*
+          generate_release_notes: true
       - name: Install uv
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         uses: astral-sh/setup-uv@v5

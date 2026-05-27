@@ -8,6 +8,7 @@ license-file = "LICENSE"
 [lib]
 name = "_sugc"
 crate-type = ["cdylib"]
+path = "sugc/lib.rs"
 
 [dependencies]
 pyo3  = { version = "0.23", features = ["extension-module", "abi3-py39"] }
