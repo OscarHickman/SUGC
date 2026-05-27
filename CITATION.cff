@@ -20,6 +20,6 @@ keywords:
   - astronomy
 abstract: >
   Correlation function counters for galaxy catalogues drawn from sparse
-  sub-volumes of periodic N-body simulations. Computes xi(r), xi(s, mu)
+  partitions of periodic N-body simulations. Computes xi(r), xi(s, mu)
   multipoles, and high-order N-point functions with corrections for
-  statistical under-sampling in m-of-k sub-volume realisations.
+  statistical under-sampling in m-of-k partition realisations.

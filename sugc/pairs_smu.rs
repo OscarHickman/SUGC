@@ -5,18 +5,18 @@ use rayon::prelude::*;
 use crate::cell_list::{CellList, HALF_SHELL, find_bin_squared};
 
 #[pyfunction]
-#[pyo3(signature = (coords, subvol_ids, s_bins, n_mu_bins, mu_max, box_size))]
+#[pyo3(signature = (coords, partition_ids, s_bins, n_mu_bins, mu_max, box_size))]
 pub fn count_pairs_smu<'py>(
     py: Python<'py>,
     coords: PyReadonlyArray2<'py, f64>,
-    subvol_ids: PyReadonlyArray1<'py, i32>,
+    partition_ids: PyReadonlyArray1<'py, i32>,
     s_bins: PyReadonlyArray1<'py, f64>,
     n_mu_bins: usize,
     mu_max: f64,
     box_size: f64,
 ) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray2<f64>>)> {
     let coords_arr = coords.as_array();
-    let sv_arr     = subvol_ids.as_array();
+    let part_arr     = partition_ids.as_array();
     let s_arr      = s_bins.as_array();
 
     let n   = coords_arr.shape()[0];
@@ -27,7 +27,7 @@ pub fn count_pairs_smu<'py>(
     let coords_flat: Vec<[f64; 3]> = (0..n)
         .map(|i| [coords_arr[[i, 0]], coords_arr[[i, 1]], coords_arr[[i, 2]]])
         .collect();
-    let sv_flat: Vec<i32> = sv_arr.to_vec();
+    let part_flat: Vec<i32> = part_arr.to_vec();
 
     let mut cl = CellList::build(&coords_flat, box_size, s_max, s_max);
 
@@ -50,13 +50,13 @@ pub fn count_pairs_smu<'py>(
     let mut xs = vec![0.0; n];
     let mut ys = vec![0.0; n];
     let mut zs = vec![0.0; n];
-    let mut svs = vec![0i32; n];
+    let mut parts = vec![0i32; n];
     let mut oidx = vec![0usize; n];
     for (k, &i) in cl.indices.iter().enumerate() {
         xs[k] = coords_flat[i][0];
         ys[k] = coords_flat[i][1];
         zs[k] = coords_flat[i][2];
-        svs[k] = sv_flat[i];
+        parts[k] = part_flat[i];
         oidx[k] = i;
     }
 
@@ -78,7 +78,7 @@ pub fn count_pairs_smu<'py>(
 
                 for i in start1..end1 {
                     let xi = xs[i]; let yi = ys[i]; let zi = zs[i];
-                    let svi = svs[i]; let i_orig = oidx[i];
+                    let parti = parts[i]; let i_orig = oidx[i];
 
                     // Self cell: j > i only
                     for j in start1..end1 {
@@ -99,7 +99,7 @@ pub fn count_pairs_smu<'py>(
                                     let imu = (mu / mu_max * n_mu as f64) as usize;
                                     let imu = imu.min(n_mu - 1);
                                     let flat = is * n_mu + imu;
-                                    if svs[j] == svi { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
+                                    if parts[j] == parti { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
                                 }
                             }
                         }
@@ -142,7 +142,7 @@ pub fn count_pairs_smu<'py>(
                                         let imu = (mu / mu_max * n_mu as f64) as usize;
                                         let imu = imu.min(n_mu - 1);
                                         let flat = is * n_mu + imu;
-                                        if svs[kj] == svi { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
+                                        if parts[kj] == parti { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
                                     }
                                 }
                             }
@@ -166,7 +166,7 @@ pub fn count_pairs_smu<'py>(
                                         let imu = (mu / mu_max * n_mu as f64) as usize;
                                         let imu = imu.min(n_mu - 1);
                                         let flat = is * n_mu + imu;
-                                        if svs[kj] == svi { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
+                                        if parts[kj] == parti { t_auto[flat] += 1.0; } else { t_cross[flat] += 1.0; }
                                     }
                                 }
                             }

@@ -20,8 +20,8 @@ from sugc._sugc import count_pairs_1d, count_pairs_smu
 # ── Parameters ────────────────────────────────────────────────────────────────
 RNG_SEED  = 42
 BOX_SIZE  = 542.16      # P-Millennium Mpc/h
-N_SUBVOLS = 27
-N_SUBVOLS_SELECTED = 9  # m/k = 1/3 (fraction of particles selected)
+N_PARTITIONS = 27
+N_PARTITIONS_SELECTED = 9  # m/k = 1/3 (fraction of particles selected)
 
 # Redshift-space parameters
 S_MAX     = 40.0
@@ -42,15 +42,15 @@ N_THREADS_CF = int(os.environ.get("OMP_NUM_THREADS", 16))
 
 def make_catalogue(n, rng):
     coords = rng.uniform(0, BOX_SIZE, size=(n, 3)).astype(np.float64, order="C")
-    sv_ids = rng.integers(0, N_SUBVOLS, size=n).astype(np.int32)
-    mask = sv_ids < N_SUBVOLS_SELECTED
-    return coords[mask], sv_ids[mask]
+    part_ids = rng.integers(0, N_PARTITIONS, size=n).astype(np.int32)
+    mask = part_ids < N_PARTITIONS_SELECTED
+    return coords[mask], part_ids[mask]
 
-def time_sugc_1d(coords, sv_ids):
+def time_sugc_1d(coords, part_ids):
     times = []
     for _ in range(REPEATS):
         t0 = time.perf_counter()
-        count_pairs_1d(coords, sv_ids, R_BINS, BOX_SIZE)
+        count_pairs_1d(coords, part_ids, R_BINS, BOX_SIZE)
         times.append(time.perf_counter() - t0)
     return float(np.median(times))
 
@@ -72,11 +72,11 @@ def time_corrfunc_1d(coords, nthreads):
         times.append(time.perf_counter() - t0)
     return float(np.median(times))
 
-def time_sugc_smu(coords, sv_ids):
+def time_sugc_smu(coords, part_ids):
     times = []
     for _ in range(REPEATS):
         t0 = time.perf_counter()
-        count_pairs_smu(coords, sv_ids, S_BINS, N_MU_BINS, MU_MAX, BOX_SIZE)
+        count_pairs_smu(coords, part_ids, S_BINS, N_MU_BINS, MU_MAX, BOX_SIZE)
         times.append(time.perf_counter() - t0)
     return float(np.median(times))
 
@@ -103,7 +103,7 @@ def time_corrfunc_smu(coords, nthreads):
 def run_benchmark():
     print("=" * 85)
     print("  SUGC vs Corrfunc High-Scale Benchmark (Up to 1 Million Selected Particles)")
-    print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_SUBVOLS_SELECTED}/{N_SUBVOLS} sub-vols")
+    print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_PARTITIONS_SELECTED}/{N_PARTITIONS} partitions")
     print(f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SUGC uses Rayon (all cores)")
     print(f"  Median of {REPEATS} runs")
     print("=" * 85)
@@ -128,10 +128,10 @@ def run_benchmark():
     results_1d = []
 
     for n_req in N_PARTICLES:
-        coords, sv_ids = make_catalogue(n_req, rng)
+        coords, part_ids = make_catalogue(n_req, rng)
         n_actual = len(coords)
 
-        t_sugc = time_sugc_1d(coords, sv_ids)
+        t_sugc = time_sugc_1d(coords, part_ids)
         t_cf_1t = time_corrfunc_1d(coords, nthreads=1)
         t_cf_nt = time_corrfunc_1d(coords, nthreads=N_THREADS_CF)
 
@@ -165,10 +165,10 @@ def run_benchmark():
     results_smu = []
 
     for n_req in N_PARTICLES:
-        coords, sv_ids = make_catalogue(n_req, rng)
+        coords, part_ids = make_catalogue(n_req, rng)
         n_actual = len(coords)
 
-        t_sugc = time_sugc_smu(coords, sv_ids)
+        t_sugc = time_sugc_smu(coords, part_ids)
         t_cf_1t = time_corrfunc_smu(coords, nthreads=1)
         t_cf_nt = time_corrfunc_smu(coords, nthreads=N_THREADS_CF)
 

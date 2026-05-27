@@ -5,17 +5,17 @@ use rayon::prelude::*;
 use crate::cell_list::{CellList, HALF_SHELL, find_bin_squared};
 
 #[pyfunction]
-#[pyo3(signature = (coords, subvol_ids, r_bins, box_size, n_order))]
+#[pyo3(signature = (coords, partition_ids, r_bins, box_size, n_order))]
 pub fn count_npoint<'py>(
     py: Python<'py>,
     coords: PyReadonlyArray2<'py, f64>,
-    subvol_ids: PyReadonlyArray1<'py, i32>,
+    partition_ids: PyReadonlyArray1<'py, i32>,
     r_bins: PyReadonlyArray1<'py, f64>,
     box_size: f64,
     n_order: usize,
 ) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<f64>>)> {
     let coords_arr = coords.as_array();
-    let sv_arr = subvol_ids.as_array();
+    let part_arr = partition_ids.as_array();
     let r_arr = r_bins.as_array();
 
     let n = coords_arr.shape()[0];
@@ -46,11 +46,11 @@ pub fn count_npoint<'py>(
     let mut xs = vec![0.0; n];
     let mut ys = vec![0.0; n];
     let mut zs = vec![0.0; n];
-    let mut svs = vec![0i32; n];
+    let mut parts = vec![0i32; n];
     let mut oidx = vec![0usize; n];
     for (k, &i) in cl.indices.iter().enumerate() {
         xs[k] = coords_flat[i][0]; ys[k] = coords_flat[i][1]; zs[k] = coords_flat[i][2];
-        svs[k] = sv_arr[i]; oidx[k] = i;
+        parts[k] = part_arr[i]; oidx[k] = i;
     }
 
     if n_order == 2 {
@@ -65,7 +65,7 @@ pub fn count_npoint<'py>(
 
                     for i in start1..end1 {
                         let xi = xs[i]; let yi = ys[i]; let zi = zs[i];
-                        let svi = svs[i]; let i_orig = oidx[i];
+                        let parti = parts[i]; let i_orig = oidx[i];
                         let z_max = zi + r_max;
                         for j in start1..end1 {
                             if oidx[j] > i_orig {
@@ -74,7 +74,7 @@ pub fn count_npoint<'py>(
                                 let dx = xs[j] - xi; let dy = ys[j] - yi; let dz = zs[j] - zi;
                                 let r_sq = dx*dx + dy*dy + dz*dz;
                                 if let Some(bin) = find_bin_squared(r_sq, &r_bins_sq) {
-                                    let s = (svi != svs[j]) as usize;
+                                    let s = (parti != parts[j]) as usize;
                                     unsafe { *t_by_s.get_unchecked_mut(s * n_r + bin) += 1.0; }
                                 }
                             }
@@ -93,7 +93,7 @@ pub fn count_npoint<'py>(
                         let cell2_zs = &zs[start2..end2];
                         for i in start1..end1 {
                             let xi = xs[i]; let yi = ys[i]; let zi = zs[i];
-                            let svi = svs[i];
+                            let parti = parts[i];
                             let z_min = zi - r_max - oz; let z_max = zi + r_max - oz;
                             let j_start_loc = cell2_zs.partition_point(|&z| z < z_min);
                             for j_loc in j_start_loc..cell2_zs.len() {
@@ -102,7 +102,7 @@ pub fn count_npoint<'py>(
                                 let dx = xs[kj] - xi + ox; let dy = ys[kj] - yi + oy; let dz = zs[kj] - zi + oz;
                                 let r_sq = dx*dx + dy*dy + dz*dz;
                                 if let Some(bin) = find_bin_squared(r_sq, &r_bins_sq) {
-                                    let s = (svi != svs[kj]) as usize;
+                                    let s = (parti != parts[kj]) as usize;
                                     unsafe { *t_by_s.get_unchecked_mut(s * n_r + bin) += 1.0; }
                                 }
                             }
@@ -144,7 +144,7 @@ pub fn count_npoint<'py>(
                 let iz1 = c1 % n_z; let iy1 = (c1 / n_z) % n_xy; let ix1 = c1 / (n_z * n_xy);
                 for i in start1..end1 {
                     let xi = xs[i]; let yi = ys[i]; let zi = zs[i];
-                    let svi = svs[i]; let i_orig = oidx[i];
+                    let parti = parts[i]; let i_orig = oidx[i];
                     let (t_by_s, neighbors, selected_k, selected_coords) = &mut acc;
                     neighbors.clear();
                     for dix in -1..=1 {
@@ -176,7 +176,7 @@ pub fn count_npoint<'py>(
                     if n_order == 3 {
                         for idx_j in 0..neighbors.len() {
                             let (kj, dxj, dyj, dzj, r_ij_sq) = neighbors[idx_j];
-                            let svj = svs[kj];
+                            let partj = parts[kj];
                             for idx_k in idx_j + 1..neighbors.len() {
                                 let (kk, dxk, dyk, dzk, r_ik_sq) = neighbors[idx_k];
                                 let mut dx = dxk - dxj; let mut dy = dyk - dyj; let mut dz = dzk - dzj;
@@ -191,7 +191,7 @@ pub fn count_npoint<'py>(
                                 let b_idx = (r_tuple_max * table_scale) as usize;
                                 let bin = unsafe { *bin_table.get_unchecked(b_idx.min(n_table - 1)) };
                                 if bin >= 0 {
-                                    let mut s_vals = [svi, svj, svs[kk]]; s_vals.sort_unstable();
+                                    let mut s_vals = [parti, partj, parts[kk]]; s_vals.sort_unstable();
                                     let mut s = 1; if s_vals[1] != s_vals[0] { s += 1; } if s_vals[2] != s_vals[1] { s += 1; }
                                     unsafe { *t_by_s.get_unchecked_mut((s - 1) * n_r + bin as usize) += 1.0; }
                                 }
@@ -200,14 +200,14 @@ pub fn count_npoint<'py>(
                     } else {
                         selected_k[0] = i; selected_coords[0] = [0.0; 3];
                         #[allow(clippy::too_many_arguments)]
-                        fn recurse(depth: usize, start: usize, cur_max: f64, sk: &mut [usize], sc: &mut [[f64; 3]], ns: &Vec<(usize, f64, f64, f64, f64)>, svs: &[i32], nr: usize, box_size: f64, half_box: f64, r_sq_max: f64, needs_pbc: bool, tbs: &mut Vec<f64>, bt: &[i32], ts: f64, nt: usize) {
+                        fn recurse(depth: usize, start: usize, cur_max: f64, sk: &mut [usize], sc: &mut [[f64; 3]], ns: &Vec<(usize, f64, f64, f64, f64)>, parts: &[i32], nr: usize, box_size: f64, half_box: f64, r_sq_max: f64, needs_pbc: bool, tbs: &mut Vec<f64>, bt: &[i32], ts: f64, nt: usize) {
                             if depth == sk.len() {
                                 let b_idx = (cur_max * ts) as usize;
                                 let bin = unsafe { *bt.get_unchecked(b_idx.min(nt - 1)) };
                                 if bin >= 0 {
                                     let mut set = [0i32; 8]; let mut s = 0;
                                     for d in 0..depth {
-                                        let sv = svs[sk[d]]; let mut found = false;
+                                        let sv = parts[sk[d]]; let mut found = false;
                                         for idx_s in 0..s { if set[idx_s] == sv { found = true; break; } }
                                         if !found { if s < 8 { set[s] = sv; s += 1; } }
                                     }
@@ -234,11 +234,11 @@ pub fn count_npoint<'py>(
                                 }
                                 if ok {
                                     sk[depth] = kn; sc[depth] = [dx_n, dy_n, dz_n];
-                                    recurse(depth + 1, idx + 1, nmx, sk, sc, ns, svs, nr, box_size, half_box, r_sq_max, needs_pbc, tbs, bt, ts, nt);
+                                    recurse(depth + 1, idx + 1, nmx, sk, sc, ns, parts, nr, box_size, half_box, r_sq_max, needs_pbc, tbs, bt, ts, nt);
                                 }
                             }
                         }
-                        recurse(1, 0, 0.0, selected_k, selected_coords, neighbors, &svs, n_r, box_size, half_box, r_sq_max, 2.0 * r_max > half_box, t_by_s, &bin_table, table_scale, n_table);
+                        recurse(1, 0, 0.0, selected_k, selected_coords, neighbors, &parts, n_r, box_size, half_box, r_sq_max, 2.0 * r_max > half_box, t_by_s, &bin_table, table_scale, n_table);
                     }
                 }
                 acc

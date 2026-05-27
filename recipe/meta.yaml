@@ -36,10 +36,10 @@ about:
   home: https://github.com/OscarHickman/SUGC
   license: MIT
   license_file: LICENSE
-  summary: Correlation function counters for galaxy catalogues from sparse N-body sub-volumes
+  summary: Correlation function counters for galaxy catalogues from sparse N-body partitions
   description: |
     Computes xi(r), xi(s, mu) multipoles, and high-order N-point functions
-    with corrections for statistical under-sampling in m-of-k sub-volume
+    with corrections for statistical under-sampling in m-of-k partition
     realisations of periodic N-body simulations.
   doc_url: https://github.com/OscarHickman/SUGC
   dev_url: https://github.com/OscarHickman/SUGC

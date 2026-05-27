@@ -9,14 +9,14 @@ pub fn has_cuda() -> bool {
 }
 
 #[pyfunction]
-#[pyo3(signature = (coords, subvol_ids, r_bins, box_size, n_order))]
+#[pyo3(signature = (coords, partition_ids, r_bins, box_size, n_order))]
 pub fn count_npoint_gpu<'py>(
     py: Python<'py>,
     coords: PyReadonlyArray2<'py, f64>,
-    subvol_ids: PyReadonlyArray1<'py, i32>,
+    partition_ids: PyReadonlyArray1<'py, i32>,
     r_bins: PyReadonlyArray1<'py, f64>,
     box_size: f64,
     n_order: usize,
 ) -> PyResult<(Bound<'py, PyArray2<f64>>, Bound<'py, PyArray1<f64>>)> {
-    crate::pairs_npoint::count_npoint(py, coords, subvol_ids, r_bins, box_size, n_order)
+    crate::pairs_npoint::count_npoint(py, coords, partition_ids, r_bins, box_size, n_order)
 }

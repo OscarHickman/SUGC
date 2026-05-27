@@ -1,12 +1,12 @@
 """
 SUGC vs Corrfunc — (s, μ) redshift-space pair counting benchmark.
 
-SUGC counts pairs split by sub-volume ID (auto + cross separately).
+SUGC counts pairs split by partition ID (auto + cross separately).
 Corrfunc DDsmu counts all pairs in one pass with SIMD optimisation.
 
 As with the 1D benchmark, the comparison is not apples-to-apples: SUGC does
 strictly more work (routing each pair to one of two accumulators, maintaining
-sub-volume membership), while Corrfunc performs a single-accumulator count.
+partition membership), while Corrfunc performs a single-accumulator count.
 The intent is to show where SUGC sits relative to a state-of-the-art reference
 at a representative RSD analysis scale (s_max = 40 Mpc/h, 100 μ bins).
 """
@@ -21,8 +21,8 @@ from sugc._sugc import count_pairs_smu
 # ── Fixed parameters ──────────────────────────────────────────────────────────
 RNG_SEED  = 42
 BOX_SIZE  = 542.16      # P-Millennium Mpc/h
-N_SUBVOLS = 27
-N_SUBVOLS_SELECTED = 9  # m/k = 1/3
+N_PARTITIONS = 27
+N_PARTITIONS_SELECTED = 9  # m/k = 1/3
 
 S_MAX     = 40.0        # Mpc/h  — typical RSD analysis scale
 N_S_BINS  = 20          # log-spaced s bins from 0.1 to S_MAX
@@ -39,16 +39,16 @@ N_THREADS_CF = min(16, max(1, len(os.sched_getaffinity(0))))
 
 def make_catalogue(n, rng):
     coords = rng.uniform(0, BOX_SIZE, size=(n, 3)).astype(np.float64, order="C")
-    sv_ids = rng.integers(0, N_SUBVOLS, size=n).astype(np.int32)
-    mask = sv_ids < N_SUBVOLS_SELECTED
-    return coords[mask], sv_ids[mask]
+    part_ids = rng.integers(0, N_PARTITIONS, size=n).astype(np.int32)
+    mask = part_ids < N_PARTITIONS_SELECTED
+    return coords[mask], part_ids[mask]
 
 
-def time_sugc(coords, sv_ids):
+def time_sugc(coords, part_ids):
     times = []
     for _ in range(REPEATS):
         t0 = time.perf_counter()
-        count_pairs_smu(coords, sv_ids, S_BINS, N_MU_BINS, MU_MAX, BOX_SIZE)
+        count_pairs_smu(coords, part_ids, S_BINS, N_MU_BINS, MU_MAX, BOX_SIZE)
         times.append(time.perf_counter() - t0)
     return float(np.median(times))
 
@@ -77,7 +77,7 @@ def time_corrfunc(coords, nthreads=1):
 def main():
     print("=" * 75)
     print("  SUGC vs Corrfunc — (s, μ) redshift-space pair counting benchmark")
-    print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_SUBVOLS_SELECTED}/{N_SUBVOLS} sub-vols")
+    print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_PARTITIONS_SELECTED}/{N_PARTITIONS} partitions")
     print(f"  s_max={S_MAX} Mpc/h  ·  {N_S_BINS} log s bins  ·  {N_MU_BINS} μ bins")
     print(f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SUGC uses Rayon default")
     print(f"  Median of {REPEATS} runs")
@@ -97,10 +97,10 @@ def main():
     rng = np.random.default_rng(RNG_SEED)
 
     for n_req in N_PARTICLES:
-        coords, sv_ids = make_catalogue(n_req, rng)
+        coords, part_ids = make_catalogue(n_req, rng)
         n_actual = len(coords)
 
-        t_sugc = time_sugc(coords, sv_ids)
+        t_sugc = time_sugc(coords, part_ids)
         t_cf_1t = time_corrfunc(coords, nthreads=1)
         t_cf_nt = time_corrfunc(coords, nthreads=N_THREADS_CF)
 

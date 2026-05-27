@@ -4,7 +4,7 @@ use rayon::prelude::*;
 
 use crate::cell_list::{CellList, HALF_SHELL, find_bin_squared};
 
-/// Count galaxy pairs in 3D real-space radial bins, split by sub-volume membership.
+/// Count galaxy pairs in 3D real-space radial bins, split by partition membership.
 ///
 /// Uses an isotropic flat cell-list and half-shell traversal for O(N) scaling.
 /// Periodic boundary conditions via minimum-image. Each pair counted once (i < j).
@@ -12,7 +12,7 @@ use crate::cell_list::{CellList, HALF_SHELL, find_bin_squared};
 /// Parameters
 /// ----------
 /// coords : (N, 3) float64 C-contiguous array — galaxy positions [x, y, z] in Mpc/h.
-/// subvol_ids : (N,) int32 array — sub-volume index for each galaxy.
+/// partition_ids : (N,) int32 array — partition index for each galaxy.
 /// r_bins : (n_r+1,) float64 array — radial bin edges in Mpc/h.
 /// box_size : float — periodic box side length.
 ///
@@ -20,16 +20,16 @@ use crate::cell_list::{CellList, HALF_SHELL, find_bin_squared};
 /// -------
 /// (dd_auto, dd_cross) : two (n_r,) float64 arrays
 #[pyfunction]
-#[pyo3(signature = (coords, subvol_ids, r_bins, box_size))]
+#[pyo3(signature = (coords, partition_ids, r_bins, box_size))]
 pub fn count_pairs_1d<'py>(
     py: Python<'py>,
     coords: PyReadonlyArray2<'py, f64>,
-    subvol_ids: PyReadonlyArray1<'py, i32>,
+    partition_ids: PyReadonlyArray1<'py, i32>,
     r_bins: PyReadonlyArray1<'py, f64>,
     box_size: f64,
 ) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>)> {
     let coords_arr = coords.as_array();
-    let sv_arr = subvol_ids.as_array();
+    let part_arr = partition_ids.as_array();
     let r_arr = r_bins.as_array();
 
     let n = coords_arr.shape()[0];
@@ -41,7 +41,7 @@ pub fn count_pairs_1d<'py>(
     let coords_flat: Vec<[f64; 3]> = (0..n)
         .map(|i| [coords_arr[[i, 0]], coords_arr[[i, 1]], coords_arr[[i, 2]]])
         .collect();
-    let sv_flat: Vec<i32> = sv_arr.to_vec();
+    let part_flat: Vec<i32> = part_arr.to_vec();
 
     let cl = CellList::build(&coords_flat, box_size, r_max, r_max);
     let half_box = box_size * 0.5;
@@ -54,7 +54,7 @@ pub fn count_pairs_1d<'py>(
             || (vec![0.0f64; n_r], vec![0.0f64; n_r]),
             |mut acc, i| {
                 let [xi, yi, zi] = coords_flat[i];
-                let svi = sv_flat[i];
+                let parti = part_flat[i];
 
                 let ix = ((xi / cl.size_xy) as usize).min(n_xy - 1);
                 let iy = ((yi / cl.size_xy) as usize).min(n_xy - 1);
@@ -72,7 +72,7 @@ pub fn count_pairs_1d<'py>(
                         let r_sq = dx*dx + dy*dy + dz*dz;
                         if r_sq >= r_sq_max { return; }
                         if let Some(ir) = find_bin_squared(r_sq, &r_bins_sq) {
-                            if sv_flat[j] == svi { acc.0[ir] += 1.0; } else { acc.1[ir] += 1.0; }
+                            if part_flat[j] == parti { acc.0[ir] += 1.0; } else { acc.1[ir] += 1.0; }
                         }
                     };
 

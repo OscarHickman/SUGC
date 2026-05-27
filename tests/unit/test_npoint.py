@@ -5,7 +5,7 @@ import numpy as np
 from sugc import compute_npcf, count_npoint, count_pairs_1d
 
 
-def brute_force_npoint(coords, subvol_ids, r_bins, box_size, n_order):
+def brute_force_npoint(coords, partition_ids, r_bins, box_size, n_order):
     """
     Python brute-force N-point counter for validation.
     O(N_gal^n_order * n_order^2)
@@ -29,8 +29,8 @@ def brute_force_npoint(coords, subvol_ids, r_bins, box_size, n_order):
         if r_bins[0] <= max_dist < r_bins[-1]:
             ir = np.searchsorted(r_bins, max_dist, side='right') - 1
             
-            # Count distinct subvolumes
-            s = len(set(subvol_ids[list(indices)]))
+            # Count distinct partitions
+            s = len(set(partition_ids[list(indices)]))
             
             t_by_s[s-1, ir] += 1
             t_total[ir] += 1
@@ -42,15 +42,15 @@ def test_npoint_vs_pairs_1d():
     n_gal = 100
     box_size = 100.0
     coords = np.random.uniform(0, box_size, (n_gal, 3)).astype(np.float64)
-    subvol_ids = np.random.randint(0, 8, n_gal).astype(np.int32)
+    partition_ids = np.random.randint(0, 8, n_gal).astype(np.int32)
     r_bins = np.linspace(0.1, 10.0, 11).astype(np.float64)
 
     # count_pairs_1d
-    dd_auto, dd_cross = count_pairs_1d(coords, subvol_ids, r_bins, box_size)
+    dd_auto, dd_cross = count_pairs_1d(coords, partition_ids, r_bins, box_size)
     dd_total_ref = dd_auto + dd_cross
 
     # count_npoint (N=2)
-    t_by_s, t_total = count_npoint(coords, subvol_ids, r_bins, box_size, 2)
+    t_by_s, t_total = count_npoint(coords, partition_ids, r_bins, box_size, 2)
 
     np.testing.assert_allclose(t_total, dd_total_ref, rtol=1e-10)
     np.testing.assert_allclose(t_by_s[0], dd_auto, rtol=1e-10)
@@ -61,12 +61,12 @@ def test_npoint_vs_brute_force_n3():
     n_gal = 40
     box_size = 20.0
     coords = np.random.uniform(0, box_size, (n_gal, 3)).astype(np.float64)
-    subvol_ids = np.random.randint(0, 3, n_gal).astype(np.int32)
+    partition_ids = np.random.randint(0, 3, n_gal).astype(np.int32)
     r_bins = np.linspace(0.5, 5.0, 5).astype(np.float64)
     
-    t_by_s_rust, t_total_rust = count_npoint(coords, subvol_ids, r_bins, box_size, 3)
+    t_by_s_rust, t_total_rust = count_npoint(coords, partition_ids, r_bins, box_size, 3)
     t_by_s_brute, t_total_brute = brute_force_npoint(
-        coords, subvol_ids, r_bins, box_size, 3
+        coords, partition_ids, r_bins, box_size, 3
     )
     
     np.testing.assert_allclose(t_total_rust, t_total_brute, rtol=1e-10)
@@ -77,12 +77,12 @@ def test_npoint_vs_brute_force_n4():
     n_gal = 20
     box_size = 15.0
     coords = np.random.uniform(0, box_size, (n_gal, 3)).astype(np.float64)
-    subvol_ids = np.random.randint(0, 4, n_gal).astype(np.int32)
+    partition_ids = np.random.randint(0, 4, n_gal).astype(np.int32)
     r_bins = np.linspace(0.5, 4.0, 4).astype(np.float64)
     
-    t_by_s_rust, t_total_rust = count_npoint(coords, subvol_ids, r_bins, box_size, 4)
+    t_by_s_rust, t_total_rust = count_npoint(coords, partition_ids, r_bins, box_size, 4)
     t_by_s_brute, t_total_brute = brute_force_npoint(
-        coords, subvol_ids, r_bins, box_size, 4
+        coords, partition_ids, r_bins, box_size, 4
     )
     
     np.testing.assert_allclose(t_total_rust, t_total_brute, rtol=1e-10)
@@ -93,11 +93,11 @@ def test_compute_npcf_full_box():
     n_gal = 200
     box_size = 50.0
     coords = np.random.uniform(0, box_size, (n_gal, 3)).astype(np.float64)
-    subvol_ids = np.random.randint(0, 4, n_gal).astype(np.int32)
+    partition_ids = np.random.randint(0, 4, n_gal).astype(np.int32)
     r_bins = np.linspace(0.1, 5.0, 6).astype(np.float64)
     
     # m=k=4, N=3
-    res = compute_npcf(coords, subvol_ids, r_bins, box_size, 4, 4, 3)
+    res = compute_npcf(coords, partition_ids, r_bins, box_size, 4, 4, 3)
     
     np.testing.assert_allclose(res["t_corr"], res["t_total"], rtol=1e-12)
     # weights should all be 1.0 when m=k
@@ -113,7 +113,7 @@ def test_npoint_early_pruning():
         [2.0, 1.0, 1.0],
         [50.0, 50.0, 50.0],
     ], dtype=np.float64)
-    subvol_ids = np.zeros(4, dtype=np.int32)
+    partition_ids = np.zeros(4, dtype=np.int32)
     r_bins = np.array([0.1, 5.0], dtype=np.float64) # r_max = 5.0
     
     # N=3 Triplets:
@@ -122,5 +122,5 @@ def test_npoint_early_pruning():
     # (0, 2, 3): max > 5.0 -> Pruned
     # (1, 2, 3): max > 5.0 -> Pruned
     
-    t_by_s, t_total = count_npoint(coords, subvol_ids, r_bins, box_size, 3)
+    t_by_s, t_total = count_npoint(coords, partition_ids, r_bins, box_size, 3)
     np.testing.assert_array_equal(t_total, [1])

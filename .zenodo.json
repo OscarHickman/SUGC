@@ -1,6 +1,6 @@
 {
   "title": "SUGC: Sparse Unbiased Galaxy Clustering",
-  "description": "Correlation function counters for galaxy catalogues drawn from sparse sub-volumes of periodic N-body simulations. Computes xi(r), xi(s, mu) multipoles, and high-order N-point functions with corrections for statistical under-sampling in m-of-k sub-volume realisations.",
+  "description": "Correlation function counters for galaxy catalogues drawn from sparse partitions of periodic N-body simulations. Computes xi(r), xi(s, mu) multipoles, and high-order N-point functions with corrections for statistical under-sampling in m-of-k partition realisations.",
   "creators": [
     {
       "name": "Hickman, Oscar",
