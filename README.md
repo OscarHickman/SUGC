@@ -10,7 +10,7 @@ Supports real-space ξ(r), redshift-space ξ(s, μ) multipoles, and high-order N
 ## Installation
 
 ```bash
-pip install sugc
+uv add sugc
 ```
 
 ## Usage
