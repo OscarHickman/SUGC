@@ -1,7 +1,6 @@
 # SUGC
 
 [![PyPI version](https://img.shields.io/pypi/v/sugc.svg)](https://pypi.org/project/sugc/)
-[![conda-forge](https://img.shields.io/conda/vn/conda-forge/sugc.svg)](https://anaconda.org/conda-forge/sugc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Correlation function counters for galaxy catalogues drawn from sparse sub-volumes of periodic N-body simulations. Written in Rust with a Python interface via PyO3.
