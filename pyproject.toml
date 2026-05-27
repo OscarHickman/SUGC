@@ -3,7 +3,7 @@ requires = ["maturin>=1.7,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "sugc"
+name = "SUGC"
 version = "0.1.0"
 description = "Sparse Unbiased Galaxy Clustering - high-performance hybrid Rust/Python correlation functions"
 authors = [
