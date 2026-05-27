@@ -1,24 +1,60 @@
-# SCOPE — Sparse Clustering On Periodic-box Estimator
+# SCOPE: Sparse Clustering On Periodic-box Estimator
 
-A high-performance hybrid Rust/Python package for computing two-point and N-point correlation functions from galaxy catalogues drawn from a sparse subset of sub-volumes of a periodic N-body simulation.
+[![PyPI version](https://img.shields.io/pypi/v/scope-corr.svg)](https://pypi.org/project/scope-corr/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
+**SCOPE** is a high-performance hybrid Rust/Python package designed for computing two-point and N-point correlation functions from galaxy catalogues. It is specifically optimized for datasets drawn from sparse sub-volumes of periodic N-body simulations.
 
-## Core Capabilities
+## Key Features
 
-- **Real-Space 2PCF:** Compute unbiased xi(r) from partial datasets.
-- **Redshift-Space RSD:** Compute ultra-optimized xi(s, mu) multipoles.
-- **N-point Functions:** High-order correlation counters (N=3, 4, ...) with recursive distance pruning.
-- **Sub-volume Correction:** Automatically applies Hickman et al. (2026) weights to correct for statistical under-sampling.
-- **Hardware-Aware Acceleration:** Automatic CPU/GPU selection for massive 50M+ galaxy datasets.
+- **Fast Correlation Functions:** Leverages Rust for heavy lifting with a clean Python interface.
+- **Real-Space & Redshift-Space:** Support for $\xi(r)$ and $\xi(s, \mu)$ multipoles.
+- **N-Point Support:** High-order correlation counters ($N=3, 4, \dots$) with optimized recursive pruning.
+- **Unbiased Estimators:** Built-in weights to correct for statistical under-sampling in sparse sub-volumes.
+- **Hardware Accelerated:** Automatic CPU/GPU routing based on task complexity and dataset size.
 
----
+## Installation
 
-## Performance Breakthroughs (Phase 2)
+You can install SCOPE directly from PyPI using \`uv\` or \`pip\`:
 
-The current version implements several advanced optimization techniques:
+\`\`\`bash
+uv pip install scope-corr
+\`\`\`
 
-1.  **Monotonic Z-Range Tracking:** Amortized O(1) candidate search for line-of-sight binning.
-2.  **Constant-Time Binning (O(1)):** High-resolution lookup tables eliminate logarithmic search overhead.
-3.  **SoA Linear Access:** Galaxy data reordered for contiguous cache-line reads and SIMD throughput.
-4.  **Hybrid CPU/GPU Selector:** Intelligently routes N=2, 3 tasks to GPU while utilizing CPU branch-prediction for N >= 4 recursive pruning.
+or
+
+\`\`\`bash
+pip install scope-corr
+\`\`\`
+
+## Quick Start
+
+\`\`\`python
+import numpy as np
+import scope
+
+# Generate some random data
+n_galaxies = 100_000
+box_size = 500.0
+coords = np.random.uniform(0, box_size, size=(n_galaxies, 3))
+
+# Compute the 2-point correlation function
+r_bins = np.linspace(0.1, 50.0, 20)
+xi = scope.pairs_1d(coords, r_bins, box_size=box_size)
+
+print(f"Computed xi(r) at {len(r_bins)-1} bins")
+\`\`\`
+
+## Advanced Usage
+
+For more detailed examples, including Redshift-Space Distortions (RSD) and 3-point correlation functions, please refer to the \`examples/\` directory in the repository.
+
+## Citation
+
+If you use SCOPE in your research, please cite:
+
+> Hickman, O. et al. (2026). "Fast and Unbiased Clustering Estimators for Sparse Sub-volumes." (In Prep).
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

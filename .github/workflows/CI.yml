@@ -19,6 +19,20 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install lint dependencies
+        run: python -m pip install ruff black
+      - name: Run Ruff
+        run: ruff check .
+      - name: Run Black
+        run: black --check .
+
   linux:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -162,7 +176,7 @@ jobs:
           args: --release --out dist
           container: off
       - name: Install built wheel
-        run: python -m pip install dist/scope-*.whl
+        run: python -m pip install dist/scope_corr-*.whl
       - name: Run unit tests
         run: python -m pytest tests/unit/ -v
 
@@ -185,20 +199,20 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [linux, musllinux, windows, macos, unit-tests, sdist]
+    needs: [lint, linux, musllinux, windows, macos, unit-tests, sdist]
     permissions:
       id-token: write
       contents: write
       attestations: write
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v6
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: 'wheels-*/*'
       - name: Install uv
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
       - name: Publish to PyPI
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: uv publish 'wheels-*/*'
