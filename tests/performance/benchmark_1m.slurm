@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=scope-bench-1m
-#SBATCH --output=scope-bench-1m.out
-#SBATCH --error=scope-bench-1m.err
+#SBATCH --job-name=sugc-bench-1m
+#SBATCH --output=sugc-bench-1m.out
+#SBATCH --error=sugc-bench-1m.err
 #SBATCH --partition=cosma7-rp,cosma7
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
