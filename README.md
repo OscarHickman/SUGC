@@ -1,60 +1,39 @@
-# SUGC: Sparse Unbiased Galaxy Clustering
+# SUGC
 
 [![PyPI version](https://img.shields.io/pypi/v/sugc.svg)](https://pypi.org/project/sugc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**SUGC** is a high-performance hybrid Rust/Python package designed for computing two-point and N-point correlation functions from galaxy catalogues. It is specifically optimized for datasets drawn from sparse sub-volumes of periodic N-body simulations.
+Correlation function counters for galaxy catalogues drawn from sparse sub-volumes of periodic N-body simulations. Written in Rust with a Python interface via PyO3.
 
-## Key Features
-
-- **Fast Correlation Functions:** Leverages Rust for heavy lifting with a clean Python interface.
-- **Real-Space & Redshift-Space:** Support for $\xi(r)$ and $\xi(s, \mu)$ multipoles.
-- **N-Point Support:** High-order correlation counters ($N=3, 4, \dots$) with optimized recursive pruning.
-- **Unbiased Estimators:** Built-in weights to correct for statistical under-sampling in sparse sub-volumes.
-- **Hardware Accelerated:** Automatic CPU/GPU routing based on task complexity and dataset size.
+Supports real-space ξ(r), redshift-space ξ(s, μ) multipoles, and high-order N-point functions (N ≥ 3). Pair counts are corrected for the statistical under-sampling that arises when working with m-of-k independent realisations of a simulation box.
 
 ## Installation
 
-You can install SUGC directly from PyPI using \`uv\` or \`pip\`:
-
-\`\`\`bash
-uv pip install sugc
-\`\`\`
-
-or
-
-\`\`\`bash
+```bash
 pip install sugc
-\`\`\`
+```
 
-## Quick Start
+## Usage
 
-\`\`\`python
+```python
 import numpy as np
-import sugc
+from sugc import count_pairs_1d
 
-# Generate some random data
-n_galaxies = 100_000
-box_size = 500.0
-coords = np.random.uniform(0, box_size, size=(n_galaxies, 3))
-
-# Compute the 2-point correlation function
+coords = np.random.uniform(0, 500.0, size=(100_000, 3))
+subvol_ids = np.zeros(100_000, dtype=np.int32)  # single sub-volume
 r_bins = np.linspace(0.1, 50.0, 20)
-xi = sugc.pairs_1d(coords, r_bins, box_size=box_size)
 
-print(f"Computed xi(r) at {len(r_bins)-1} bins")
-\`\`\`
+counts, weights = count_pairs_1d(coords, subvol_ids, r_bins, box_size=500.0)
+```
 
-## Advanced Usage
-
-For more detailed examples, including Redshift-Space Distortions (RSD) and 3-point correlation functions, please refer to the \`examples/\` directory in the repository.
+See `examples/` for redshift-space distortions and 3-point correlation functions.
 
 ## Citation
 
-If you use SUGC in your research, please cite:
+If you use this in published work, please cite:
 
-> Hickman, O. et al. (2026). "Fast and Unbiased Clustering Estimators for Sparse Sub-volumes." (In Prep).
+> Hickman, O. et al. (2026). *Fast and Unbiased Clustering Estimators for Sparse Sub-volumes.* (In Prep).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
