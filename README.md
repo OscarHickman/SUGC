@@ -1,6 +1,7 @@
 # SUGC
 
 [![PyPI version](https://img.shields.io/pypi/v/sugc.svg)](https://pypi.org/project/sugc/)
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/sugc.svg)](https://anaconda.org/conda-forge/sugc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Correlation function counters for galaxy catalogues drawn from sparse sub-volumes of periodic N-body simulations. Written in Rust with a Python interface via PyO3.
@@ -10,7 +11,11 @@ Supports real-space ξ(r), redshift-space ξ(s, μ) multipoles, and high-order N
 ## Installation
 
 ```bash
+# pip / uv
 uv add sugc
+
+# conda
+conda install -c conda-forge sugc
 ```
 
 ## Usage
@@ -33,6 +38,8 @@ See `examples/` for redshift-space distortions and 3-point correlation functions
 If you use this in published work, please cite:
 
 > Hickman, O. et al. (2026). *Fast and Unbiased Clustering Estimators for Sparse Sub-volumes.* (In Prep).
+
+A `CITATION.cff` is included for software citation via GitHub or Zenodo.
 
 ## License
 

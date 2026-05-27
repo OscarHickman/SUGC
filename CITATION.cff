@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+type: software
+title: "SUGC: Sparse Unbiased Galaxy Clustering"
+version: 0.1.0
+date-released: 2026-05-27
+license: MIT
+url: "https://github.com/OscarHickman/SUGC"
+repository-code: "https://github.com/OscarHickman/SUGC"
+authors:
+  - family-names: Hickman
+    given-names: Oscar
+    affiliation: "Institute for Computational Cosmology, Durham University"
+    email: oscar.hickman17@alumni.imperial.ac.uk
+keywords:
+  - cosmology
+  - galaxy clustering
+  - correlation functions
+  - N-body simulations
+  - astronomy
+abstract: >
+  Correlation function counters for galaxy catalogues drawn from sparse
+  sub-volumes of periodic N-body simulations. Computes xi(r), xi(s, mu)
+  multipoles, and high-order N-point functions with corrections for
+  statistical under-sampling in m-of-k sub-volume realisations.

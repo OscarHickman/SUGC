@@ -1,0 +1,35 @@
+{
+  "title": "SUGC: Sparse Unbiased Galaxy Clustering",
+  "description": "Correlation function counters for galaxy catalogues drawn from sparse sub-volumes of periodic N-body simulations. Computes xi(r), xi(s, mu) multipoles, and high-order N-point functions with corrections for statistical under-sampling in m-of-k sub-volume realisations.",
+  "creators": [
+    {
+      "name": "Hickman, Oscar",
+      "affiliation": "Institute for Computational Cosmology, Durham University"
+    }
+  ],
+  "keywords": [
+    "cosmology",
+    "galaxy clustering",
+    "correlation functions",
+    "two-point statistics",
+    "N-point functions",
+    "N-body simulations",
+    "redshift-space distortions",
+    "astronomy"
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "access_right": "open",
+  "related_identifiers": [
+    {
+      "scheme": "url",
+      "identifier": "https://github.com/OscarHickman/SUGC",
+      "relation": "isSupplementTo"
+    },
+    {
+      "scheme": "url",
+      "identifier": "https://pypi.org/project/sugc/",
+      "relation": "isIdenticalTo"
+    }
+  ]
+}
