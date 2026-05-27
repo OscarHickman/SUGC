@@ -10,8 +10,9 @@ At large r_max cells degenerate → O(N²) at r_max = box/2.
 Fixed N=100,000 throughout so timing differences are purely due to r_max.
 """
 
-import time
 import os
+import time
+
 import numpy as np
 from Corrfunc.theory import DD
 from sugc._sugc import count_pairs_1d
@@ -87,6 +88,6 @@ for r_max in R_MAX_VALUES:
 
 print("=" * 80)
 print()
-print(f"Note: 'n_cells' = min(128, floor(box/r_max)) — cell count per dimension.")
-print(f"      At n_cells=3 (r_max ≥ box/3 ≈ 171 Mpc/h) the cell list gives no gain.")
+print("Note: 'n_cells' = min(128, floor(box/r_max)) — cell count per dimension.")
+print("      At n_cells=3 (r_max ≥ box/3 ≈ 171 Mpc/h) the cell list gives no gain.")
 print(f"      box/2 = {BOX_SIZE/2:.1f} Mpc/h is the max physical separation (min-image).")

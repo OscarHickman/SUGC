@@ -1,6 +1,9 @@
-import numpy as np
 import time
+
+import numpy as np
+
 from sugc import count_npoint
+
 
 def benchmark():
     n_gal = 100000

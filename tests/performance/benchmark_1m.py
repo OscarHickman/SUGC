@@ -10,8 +10,9 @@ SUGC runs with Rayon (using all available threads).
 Corrfunc runs with 1 thread and N threads (typically 16 threads).
 """
 
-import time
 import os
+import time
+
 import numpy as np
 from Corrfunc.theory import DD, DDsmu
 from sugc._sugc import count_pairs_1d, count_pairs_smu

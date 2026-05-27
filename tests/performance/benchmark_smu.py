@@ -11,8 +11,9 @@ The intent is to show where SUGC sits relative to a state-of-the-art reference
 at a representative RSD analysis scale (s_max = 40 Mpc/h, 100 μ bins).
 """
 
-import time
 import os
+import time
+
 import numpy as np
 from Corrfunc.theory import DDsmu
 from sugc._sugc import count_pairs_smu

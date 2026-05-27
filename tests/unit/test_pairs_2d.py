@@ -15,10 +15,9 @@ is zero. We demand |ξ| < 0.10 in every well-populated bin (RR > 100).
 
 import numpy as np
 import pytest
-
 from sugc._sugc import count_pairs_2d
-from sugc import analytic_rr, compute_2pcf
 
+from sugc import analytic_rr, compute_2pcf
 
 # ─── Brute-force reference ────────────────────────────────────────────────────
 

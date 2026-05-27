@@ -10,8 +10,9 @@ O(N) scaling approach are the same, so this shows where SUGC sits relative to a
 state-of-the-art reference implementation.
 """
 
-import time
 import os
+import time
+
 import numpy as np
 from Corrfunc.theory import DD
 from sugc._sugc import count_pairs_1d
