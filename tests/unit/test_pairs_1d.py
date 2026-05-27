@@ -23,18 +23,19 @@ from sugc import analytic_rr_1d, compute_xi
 
 # ─── Brute-force reference ────────────────────────────────────────────────────
 
+
 def _bf_1d(coords, part_ids, r_bins, box):
     """O(N²) pair counter — correct by construction, used to validate Rust code."""
     n = len(coords)
-    r_sq_bins = r_bins ** 2
+    r_sq_bins = r_bins**2
     n_bins = len(r_bins) - 1
     auto = np.zeros(n_bins)
     cross = np.zeros(n_bins)
     for i in range(n):
-        d = coords[i + 1:] - coords[i]
-        d -= box * np.round(d / box)           # minimum-image
-        r_sq = (d ** 2).sum(axis=1)
-        same = part_ids[i + 1:] == part_ids[i]
+        d = coords[i + 1 :] - coords[i]
+        d -= box * np.round(d / box)  # minimum-image
+        r_sq = (d**2).sum(axis=1)
+        same = part_ids[i + 1 :] == part_ids[i]
         for k in range(n_bins):
             in_bin = (r_sq >= r_sq_bins[k]) & (r_sq < r_sq_bins[k + 1])
             auto[k] += np.count_nonzero(in_bin & same)
@@ -43,6 +44,7 @@ def _bf_1d(coords, part_ids, r_bins, box):
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture(scope="module")
 def small_cat():
@@ -67,6 +69,7 @@ def uniform_cat_1d():
 
 
 # ─── count_pairs_1d ───────────────────────────────────────────────────────────
+
 
 class TestCountPairs1D:
     def test_matches_brute_force_auto(self, small_cat):
@@ -111,14 +114,14 @@ class TestCountPairs1D:
         part_ids = np.array([0, 0], dtype=np.int32)
         r_bins = np.array([1.0, 3.0, 10.0])
         auto, cross = count_pairs_1d(coords, part_ids, r_bins, box)
-        assert auto[0] == 1.0   # bin [1, 3) contains the pair
+        assert auto[0] == 1.0  # bin [1, 3) contains the pair
         assert auto[1] == 0.0
 
     def test_pair_beyond_rmax_excluded(self):
         box = 200.0
         coords = np.array([[0.0, 0.0, 0.0], [60.0, 0.0, 0.0]], dtype=np.float64)
         part_ids = np.array([0, 1], dtype=np.int32)
-        r_bins = np.array([1.0, 50.0])        # r_max = 50 < 60
+        r_bins = np.array([1.0, 50.0])  # r_max = 50 < 60
         auto, cross = count_pairs_1d(coords, part_ids, r_bins, box)
         assert auto[0] == 0.0 and cross[0] == 0.0
 
@@ -126,7 +129,7 @@ class TestCountPairs1D:
         box = 200.0
         coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=np.float64)
         part_ids = np.array([0, 0], dtype=np.int32)
-        r_bins = np.array([5.0, 50.0])        # r_min = 5 > 1
+        r_bins = np.array([5.0, 50.0])  # r_min = 5 > 1
         auto, cross = count_pairs_1d(coords, part_ids, r_bins, box)
         assert auto[0] == 0.0
 
@@ -174,6 +177,7 @@ class TestCountPairs1D:
 
 # ─── analytic_rr_1d ───────────────────────────────────────────────────────────
 
+
 class TestAnalyticRR1D:
     def test_matches_formula(self):
         """RR(r) = N(N-1)/2 · V_shell(r) / V_box."""
@@ -181,7 +185,7 @@ class TestAnalyticRR1D:
         r_bins = np.array([2.0, 8.0, 25.0, 60.0])
         rr = analytic_rr_1d(r_bins, box, n)
         v_shell = (4 * np.pi / 3) * (r_bins[1:] ** 3 - r_bins[:-1] ** 3)
-        expected = n * (n - 1) / 2 * v_shell / box ** 3
+        expected = n * (n - 1) / 2 * v_shell / box**3
         assert np.allclose(rr, expected)
 
     def test_output_shape(self):
@@ -223,6 +227,7 @@ class TestAnalyticRR1D:
 
 
 # ─── compute_xi ───────────────────────────────────────────────────────────────
+
 
 class TestComputeXi:
     def test_output_keys(self, small_cat):
@@ -270,7 +275,7 @@ class TestComputeXi:
         rng = np.random.default_rng(5)
         n, box, k = 80, 100.0, 5
         coords = rng.uniform(0, box, (n, 3)).astype(np.float64)
-        part_ids = np.zeros(n, dtype=np.int32)          # single partition
+        part_ids = np.zeros(n, dtype=np.int32)  # single partition
         r_bins = np.array([1.0, 10.0, 40.0])
         result = compute_xi(coords, part_ids, r_bins, box, k, 1)
         assert np.all(result["dd_cross"] == 0.0)

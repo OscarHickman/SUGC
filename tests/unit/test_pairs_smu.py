@@ -11,7 +11,7 @@ def _bf_smu(coords, part_ids, s_bins, n_mu, mu_max, box):
     cross = np.zeros((n_s, n_mu))
     s_sq_bins = s_bins**2
     half_box = box * 0.5
-    
+
     for i in range(n):
         xi, yi, zi = coords[i]
         parti = part_ids[i]
@@ -20,7 +20,7 @@ def _bf_smu(coords, part_ids, s_bins, n_mu, mu_max, box):
             dx = xj - xi
             dy = yj - yi
             dz = zj - zi
-            
+
             # Minimum-image convention matching Rust implementation
             if dx > half_box:
                 dx -= box
@@ -34,12 +34,12 @@ def _bf_smu(coords, part_ids, s_bins, n_mu, mu_max, box):
                 dz -= box
             elif dz < -half_box:
                 dz += box
-            
-            s_sq = dx*dx + dy*dy + dz*dz
+
+            s_sq = dx * dx + dy * dy + dz * dz
             if s_sq < s_sq_bins[-1]:
                 # Rust uses find_bin_squared (partition_point <= val)
                 # s_sq_bins = [1, 100, 625, 2500]
-                idx_s = np.searchsorted(s_sq_bins, s_sq, side='right') - 1
+                idx_s = np.searchsorted(s_sq_bins, s_sq, side="right") - 1
                 if idx_s >= 0:
                     s = np.sqrt(s_sq)
                     mu = np.abs(dz) / s
@@ -53,6 +53,7 @@ def _bf_smu(coords, part_ids, s_bins, n_mu, mu_max, box):
                             cross[idx_s, idx_mu] += 1
     return auto, cross
 
+
 @pytest.fixture
 def small_cat_smu():
     np.random.seed(42)
@@ -65,6 +66,7 @@ def small_cat_smu():
     n_mu = 5
     mu_max = 1.0
     return coords, part_ids, box, s_bins, n_mu, mu_max
+
 
 class TestCountPairsSmu:
     def test_matches_brute_force_auto(self, small_cat_smu):
@@ -83,20 +85,30 @@ class TestCountPairsSmu:
         coords, part_ids, box, s_bins, n_mu, _ = small_cat_smu
         with pytest.raises(ValueError):
             compute_xi_smu(
-                coords, part_ids, s_bins, box,
-                n_partitions=3, n_partitions_selected=4, n_mu_bins=n_mu,
+                coords,
+                part_ids,
+                s_bins,
+                box,
+                n_partitions=3,
+                n_partitions_selected=4,
+                n_mu_bins=n_mu,
             )
 
     def test_invalid_m_is_zero(self, small_cat_smu):
         coords, part_ids, box, s_bins, n_mu, _ = small_cat_smu
         with pytest.raises(ValueError):
             compute_xi_smu(
-                coords, part_ids, s_bins, box,
-                n_partitions=3, n_partitions_selected=0, n_mu_bins=n_mu,
+                coords,
+                part_ids,
+                s_bins,
+                box,
+                n_partitions=3,
+                n_partitions_selected=0,
+                n_mu_bins=n_mu,
             )
 
     def test_output_shape(self, small_cat_smu):
         coords, part_ids, box, s_bins, n_mu, mu_max = small_cat_smu
         auto, cross = count_pairs_smu(coords, part_ids, s_bins, n_mu, mu_max, box)
-        assert auto.shape == (len(s_bins)-1, n_mu)
-        assert cross.shape == (len(s_bins)-1, n_mu)
+        assert auto.shape == (len(s_bins) - 1, n_mu)
+        assert cross.shape == (len(s_bins) - 1, n_mu)

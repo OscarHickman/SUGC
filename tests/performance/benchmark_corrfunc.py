@@ -18,10 +18,10 @@ from Corrfunc.theory import DD
 from sugc._sugc import count_pairs_1d
 
 # ── Fixed parameters ──────────────────────────────────────────────────────────
-RNG_SEED  = 42
-BOX_SIZE  = 542.16      # P-Millennium Mpc/h
-N_PARTITIONS = 27         # k independent realisations
-N_PARTITIONS_SELECTED = 9 # m realisations selected (m/k = 1/3)
+RNG_SEED = 42
+BOX_SIZE = 542.16  # P-Millennium Mpc/h
+N_PARTITIONS = 27  # k independent realisations
+N_PARTITIONS_SELECTED = 9  # m realisations selected (m/k = 1/3)
 
 # 30 log-spaced bins from 0.01 to 256 Mpc/h  (covers kpc/h to box/2)
 R_BINS = np.logspace(np.log10(0.01), np.log10(256.0), 31)
@@ -65,7 +65,9 @@ def time_corrfunc(coords, nthreads=1):
             autocorr=1,
             nthreads=nthreads,
             binfile=R_BINS,
-            X1=x, Y1=y, Z1=z,
+            X1=x,
+            Y1=y,
+            Z1=z,
             periodic=True,
             boxsize=BOX_SIZE,
             output_ravg=False,
@@ -78,9 +80,13 @@ def time_corrfunc(coords, nthreads=1):
 def main():
     print("=" * 75)
     print("  SUGC vs Corrfunc — 3D real-space pair counting benchmark")
-    print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_PARTITIONS_SELECTED}/{N_PARTITIONS} partitions")
+    print(
+        f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_PARTITIONS_SELECTED}/{N_PARTITIONS} partitions"
+    )
     print(f"  {len(R_BINS)-1} log bins  [{R_BINS[0]:.3f}, {R_BINS[-1]:.1f}] Mpc/h")
-    print(f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SUGC uses Rayon default")
+    print(
+        f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SUGC uses Rayon default"
+    )
     print(f"  Median of {REPEATS} runs")
     print("=" * 75)
     print(
@@ -88,9 +94,11 @@ def main():
         f"{'SUGC':>8}  {'CF 1t':>8}  {'ratio':>6}  "
         f"{'CF Nt':>8}  {'ratio':>6}"
     )
-    print(f"  {'(req)':>8}  {'(sel)':>8}  "
-          f"{'[ms]':>8}  {'[ms]':>8}  {'':>6}  "
-          f"{'[ms]':>8}  {'':>6}")
+    print(
+        f"  {'(req)':>8}  {'(sel)':>8}  "
+        f"{'[ms]':>8}  {'[ms]':>8}  {'':>6}  "
+        f"{'[ms]':>8}  {'':>6}"
+    )
     print("-" * 75)
 
     rng = np.random.default_rng(RNG_SEED)
@@ -99,9 +107,9 @@ def main():
         coords, part_ids = make_catalogue(n_req, rng)
         n_actual = len(coords)
 
-        t_sugc  = time_sugc(coords, part_ids)
-        t_cf_1t  = time_corrfunc(coords, nthreads=1)
-        t_cf_nt  = time_corrfunc(coords, nthreads=N_THREADS_CF)
+        t_sugc = time_sugc(coords, part_ids)
+        t_cf_1t = time_corrfunc(coords, nthreads=1)
+        t_cf_nt = time_corrfunc(coords, nthreads=N_THREADS_CF)
 
         r1 = t_sugc / t_cf_1t
         rN = t_sugc / t_cf_nt
@@ -114,8 +122,12 @@ def main():
     print("=" * 75)
     print()
     print("Notes:")
-    print("  SUGC routes each pair to dd_auto or dd_cross — strictly more work than Corrfunc.")
-    print("  Corrfunc uses AVX/AVX2 SIMD, tile-based cache blocking, and optional OpenMP.")
+    print(
+        "  SUGC routes each pair to dd_auto or dd_cross — strictly more work than Corrfunc."
+    )
+    print(
+        "  Corrfunc uses AVX/AVX2 SIMD, tile-based cache blocking, and optional OpenMP."
+    )
     print("  ratio > 1 means SUGC is slower; < 1 means SUGC is faster.")
 
 

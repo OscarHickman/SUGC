@@ -21,19 +21,20 @@ from sugc import analytic_rr, compute_2pcf
 
 # ─── Brute-force reference ────────────────────────────────────────────────────
 
+
 def _bf_2d(coords, part_ids, rp_bins, pi_bins, box):
     """O(N²) 2D pair counter — correct by construction, used to validate Rust code."""
     n = len(coords)
-    rp_sq_bins = rp_bins ** 2
+    rp_sq_bins = rp_bins**2
     n_rp, n_pi = len(rp_bins) - 1, len(pi_bins) - 1
     auto = np.zeros((n_rp, n_pi))
     cross = np.zeros((n_rp, n_pi))
     for i in range(n):
-        d = coords[i + 1:] - coords[i]
+        d = coords[i + 1 :] - coords[i]
         d -= box * np.round(d / box)
         rp_sq = d[:, 0] ** 2 + d[:, 1] ** 2
         pi = np.abs(d[:, 2])
-        same = part_ids[i + 1:] == part_ids[i]
+        same = part_ids[i + 1 :] == part_ids[i]
         for irp in range(n_rp):
             rp_ok = (rp_sq >= rp_sq_bins[irp]) & (rp_sq < rp_sq_bins[irp + 1])
             for ipi in range(n_pi):
@@ -45,6 +46,7 @@ def _bf_2d(coords, part_ids, rp_bins, pi_bins, box):
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture(scope="module")
 def small_cat_2d():
@@ -71,6 +73,7 @@ def uniform_cat_2d():
 
 
 # ─── count_pairs_2d ───────────────────────────────────────────────────────────
+
 
 class TestCountPairs2D:
     def test_matches_brute_force_auto(self, small_cat_2d):
@@ -113,7 +116,7 @@ class TestCountPairs2D:
         rp_bins = np.array([1.0, 3.0, 20.0])
         pi_bins = np.array([0.0, 5.0])
         auto, cross = count_pairs_2d(coords, part_ids, rp_bins, pi_bins, box)
-        assert auto[0, 0] == 1.0   # r_p=2 in [1,3), π=0 in [0,5)
+        assert auto[0, 0] == 1.0  # r_p=2 in [1,3), π=0 in [0,5)
 
     def test_output_shape(self, small_cat_2d):
         coords, part_ids, box, rp_bins, pi_bins = small_cat_2d
@@ -137,6 +140,7 @@ class TestCountPairs2D:
 
 # ─── analytic_rr (2D) ─────────────────────────────────────────────────────────
 
+
 class TestAnalyticRR2D:
     def test_matches_formula(self):
         """RR = N(N-1)/2 · π(r_p_hi²−r_p_lo²) · 2Δπ / V_box."""
@@ -144,9 +148,9 @@ class TestAnalyticRR2D:
         pi_bins = np.array([3.0, 9.0])
         box, n = 100.0, 500
         rr = analytic_rr(rp_bins, pi_bins, box, n)
-        ann_area = np.pi * (6.0 ** 2 - 2.0 ** 2)
+        ann_area = np.pi * (6.0**2 - 2.0**2)
         v = 2.0 * ann_area * (9.0 - 3.0)
-        expected = n * (n - 1) / 2 * v / box ** 3
+        expected = n * (n - 1) / 2 * v / box**3
         assert np.isclose(rr[0, 0], expected)
 
     def test_output_shape(self):
@@ -171,6 +175,7 @@ class TestAnalyticRR2D:
 
 
 # ─── compute_2pcf ─────────────────────────────────────────────────────────────
+
 
 class TestCompute2PCF:
     def test_output_keys(self, uniform_cat_2d):
@@ -243,8 +248,9 @@ class TestCompute2PCF:
         coords, part_ids, box, rp_bins, pi_bins, k = uniform_cat_2d
         m = 2
         n_explicit = 50_000
-        result = compute_2pcf(coords, part_ids, rp_bins, pi_bins, box, k, m,
-                              n_total=n_explicit)
+        result = compute_2pcf(
+            coords, part_ids, rp_bins, pi_bins, box, k, m, n_total=n_explicit
+        )
         expected_rr = analytic_rr(rp_bins, pi_bins, box, n_explicit)
         assert np.allclose(result["rr"], expected_rr)
 

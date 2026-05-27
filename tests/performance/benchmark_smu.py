@@ -19,15 +19,15 @@ from Corrfunc.theory import DDsmu
 from sugc._sugc import count_pairs_smu
 
 # ── Fixed parameters ──────────────────────────────────────────────────────────
-RNG_SEED  = 42
-BOX_SIZE  = 542.16      # P-Millennium Mpc/h
+RNG_SEED = 42
+BOX_SIZE = 542.16  # P-Millennium Mpc/h
 N_PARTITIONS = 27
 N_PARTITIONS_SELECTED = 9  # m/k = 1/3
 
-S_MAX     = 40.0        # Mpc/h  — typical RSD analysis scale
-N_S_BINS  = 20          # log-spaced s bins from 0.1 to S_MAX
-N_MU_BINS = 100         # uniform μ bins in [0, 1]
-MU_MAX    = 1.0
+S_MAX = 40.0  # Mpc/h  — typical RSD analysis scale
+N_S_BINS = 20  # log-spaced s bins from 0.1 to S_MAX
+N_MU_BINS = 100  # uniform μ bins in [0, 1]
+MU_MAX = 1.0
 
 S_BINS = np.logspace(np.log10(0.1), np.log10(S_MAX), N_S_BINS + 1)
 
@@ -64,7 +64,9 @@ def time_corrfunc(coords, nthreads=1):
             binfile=S_BINS,
             mu_max=MU_MAX,
             nmu_bins=N_MU_BINS,
-            X1=x, Y1=y, Z1=z,
+            X1=x,
+            Y1=y,
+            Z1=z,
             periodic=True,
             boxsize=BOX_SIZE,
             output_savg=False,
@@ -77,9 +79,13 @@ def time_corrfunc(coords, nthreads=1):
 def main():
     print("=" * 75)
     print("  SUGC vs Corrfunc — (s, μ) redshift-space pair counting benchmark")
-    print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_PARTITIONS_SELECTED}/{N_PARTITIONS} partitions")
+    print(
+        f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_PARTITIONS_SELECTED}/{N_PARTITIONS} partitions"
+    )
     print(f"  s_max={S_MAX} Mpc/h  ·  {N_S_BINS} log s bins  ·  {N_MU_BINS} μ bins")
-    print(f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SUGC uses Rayon default")
+    print(
+        f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SUGC uses Rayon default"
+    )
     print(f"  Median of {REPEATS} runs")
     print("=" * 75)
     print(
@@ -115,8 +121,12 @@ def main():
     print("=" * 75)
     print()
     print("Notes:")
-    print("  SUGC routes each pair to dd_auto or dd_cross — strictly more work than Corrfunc.")
-    print("  Corrfunc uses AVX/AVX2 SIMD, tile-based cache blocking, and optional OpenMP.")
+    print(
+        "  SUGC routes each pair to dd_auto or dd_cross — strictly more work than Corrfunc."
+    )
+    print(
+        "  Corrfunc uses AVX/AVX2 SIMD, tile-based cache blocking, and optional OpenMP."
+    )
     print("  ratio > 1 means SUGC is slower; < 1 means SUGC is faster.")
 
 
