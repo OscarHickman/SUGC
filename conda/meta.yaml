@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: # fill in after `pip download sugc=={{ version }} --no-deps` and `sha256sum *.tar.gz`
+  sha256: 65f3a2a9986587532467460f9ffe326d282dcb8f67ce66018a174fce76589c52
 
 build:
   number: 0
