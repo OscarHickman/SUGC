@@ -1,13 +1,13 @@
 """
-SCOPE vs Corrfunc — (s, μ) redshift-space pair counting benchmark.
+SUGC vs Corrfunc — (s, μ) redshift-space pair counting benchmark.
 
-SCOPE counts pairs split by sub-volume ID (auto + cross separately).
+SUGC counts pairs split by sub-volume ID (auto + cross separately).
 Corrfunc DDsmu counts all pairs in one pass with SIMD optimisation.
 
-As with the 1D benchmark, the comparison is not apples-to-apples: SCOPE does
+As with the 1D benchmark, the comparison is not apples-to-apples: SUGC does
 strictly more work (routing each pair to one of two accumulators, maintaining
 sub-volume membership), while Corrfunc performs a single-accumulator count.
-The intent is to show where SCOPE sits relative to a state-of-the-art reference
+The intent is to show where SUGC sits relative to a state-of-the-art reference
 at a representative RSD analysis scale (s_max = 40 Mpc/h, 100 μ bins).
 """
 
@@ -15,7 +15,7 @@ import time
 import os
 import numpy as np
 from Corrfunc.theory import DDsmu
-from scope._scope import count_pairs_smu
+from sugc._sugc import count_pairs_smu
 
 # ── Fixed parameters ──────────────────────────────────────────────────────────
 RNG_SEED  = 42
@@ -43,7 +43,7 @@ def make_catalogue(n, rng):
     return coords[mask], sv_ids[mask]
 
 
-def time_scope(coords, sv_ids):
+def time_sugc(coords, sv_ids):
     times = []
     for _ in range(REPEATS):
         t0 = time.perf_counter()
@@ -75,15 +75,15 @@ def time_corrfunc(coords, nthreads=1):
 
 def main():
     print("=" * 75)
-    print("  SCOPE vs Corrfunc — (s, μ) redshift-space pair counting benchmark")
+    print("  SUGC vs Corrfunc — (s, μ) redshift-space pair counting benchmark")
     print(f"  P-Millennium box={BOX_SIZE} Mpc/h  ·  {N_SUBVOLS_SELECTED}/{N_SUBVOLS} sub-vols")
     print(f"  s_max={S_MAX} Mpc/h  ·  {N_S_BINS} log s bins  ·  {N_MU_BINS} μ bins")
-    print(f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SCOPE uses Rayon default")
+    print(f"  Corrfunc multi-thread uses {N_THREADS_CF} threads  ·  SUGC uses Rayon default")
     print(f"  Median of {REPEATS} runs")
     print("=" * 75)
     print(
         f"  {'N input':>8}  {'N actual':>8}  "
-        f"{'SCOPE':>8}  {'CF 1t':>8}  {'ratio':>6}  "
+        f"{'SUGC':>8}  {'CF 1t':>8}  {'ratio':>6}  "
         f"{'CF Nt':>8}  {'ratio':>6}"
     )
     print(
@@ -99,24 +99,24 @@ def main():
         coords, sv_ids = make_catalogue(n_req, rng)
         n_actual = len(coords)
 
-        t_scope = time_scope(coords, sv_ids)
+        t_sugc = time_sugc(coords, sv_ids)
         t_cf_1t = time_corrfunc(coords, nthreads=1)
         t_cf_nt = time_corrfunc(coords, nthreads=N_THREADS_CF)
 
-        r1 = t_scope / t_cf_1t
-        rN = t_scope / t_cf_nt
+        r1 = t_sugc / t_cf_1t
+        rN = t_sugc / t_cf_nt
         print(
             f"  {n_req:>8,}  {n_actual:>8,}  "
-            f"{t_scope*1e3:>8.1f}  {t_cf_1t*1e3:>8.1f}  {r1:>6.2f}x  "
+            f"{t_sugc*1e3:>8.1f}  {t_cf_1t*1e3:>8.1f}  {r1:>6.2f}x  "
             f"{t_cf_nt*1e3:>8.1f}  {rN:>6.2f}x"
         )
 
     print("=" * 75)
     print()
     print("Notes:")
-    print("  SCOPE routes each pair to dd_auto or dd_cross — strictly more work than Corrfunc.")
+    print("  SUGC routes each pair to dd_auto or dd_cross — strictly more work than Corrfunc.")
     print("  Corrfunc uses AVX/AVX2 SIMD, tile-based cache blocking, and optional OpenMP.")
-    print("  ratio > 1 means SCOPE is slower; < 1 means SCOPE is faster.")
+    print("  ratio > 1 means SUGC is slower; < 1 means SUGC is faster.")
 
 
 if __name__ == "__main__":

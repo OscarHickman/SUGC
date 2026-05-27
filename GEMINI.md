@@ -1,7 +1,7 @@
-# GEMINI.md — SCOPE Project Context
+# GEMINI.md — SUGC Project Context
 
 ## Project Overview
-**SCOPE** (Sparse Clustering On Periodic-box Estimator) is a hybrid Rust/Python package for unbiased galaxy clustering estimates from sparse sub-volumes.
+**SUGC** (Sparse Clustering On Periodic-box Estimator) is a hybrid Rust/Python package for unbiased galaxy clustering estimates from sparse sub-volumes.
 
 ### Phase 2 Breakthroughs:
 - **N-point Capabilities:** Support for 3PCF, 4PCF, and beyond with optimized recursive pruning.

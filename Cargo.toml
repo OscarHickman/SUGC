@@ -1,12 +1,12 @@
 [package]
-name = "scope"
+name = "sugc"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
 license-file = "LICENSE"
 
 [lib]
-name = "_scope"
+name = "_sugc"
 crate-type = ["cdylib"]
 
 [dependencies]

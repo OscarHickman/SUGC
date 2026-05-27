@@ -1,5 +1,5 @@
 """
-SCOPE vs Corrfunc — performance vs r_max sweep.
+SUGC vs Corrfunc — performance vs r_max sweep.
 
 P-Millennium box (542.16 Mpc/h).  Sweeps r_max from 0.01 Mpc/h (10 kpc/h) up to
 256 Mpc/h (box/2, the physical maximum for periodic minimum-image).
@@ -14,7 +14,7 @@ import time
 import os
 import numpy as np
 from Corrfunc.theory import DD
-from scope._scope import count_pairs_1d
+from sugc._sugc import count_pairs_1d
 
 BOX_SIZE = 542.16       # P-Millennium Mpc/h
 N        = 100_000
@@ -45,18 +45,18 @@ def timeit(fn, reps=REPEATS):
 
 
 def n_cells(r_max):
-    """Number of cells SCOPE would build (after the 128 cap)."""
+    """Number of cells SUGC would build (after the 128 cap)."""
     return min(128, max(3, int(BOX_SIZE / r_max)))
 
 
 print("=" * 80)
-print("  SCOPE vs Corrfunc — timing vs r_max  (P-Millennium, box=542.16 Mpc/h)")
+print("  SUGC vs Corrfunc — timing vs r_max  (P-Millennium, box=542.16 Mpc/h)")
 print(f"  N={N:,}  {N_BINS} log r bins per decade")
-print(f"  Corrfunc: {N_THREADS_CF} threads    SCOPE: Rayon (all available threads)")
+print(f"  Corrfunc: {N_THREADS_CF} threads    SUGC: Rayon (all available threads)")
 print(f"  Median of {REPEATS} runs")
 print("=" * 80)
 print(f"  {'r_max':>8}  {'n_cells':>8}  "
-      f"{'SCOPE':>8}  {'CF 1t':>8}  {'CF Nt':>8}  {'S/CF-1t':>8}  {'S/CF-Nt':>8}")
+      f"{'SUGC':>8}  {'CF 1t':>8}  {'CF Nt':>8}  {'S/CF-1t':>8}  {'S/CF-Nt':>8}")
 print(f"  {'(Mpc/h)':>8}  {'':>8}  "
       f"{'(ms)':>8}  {'(ms)':>8}  {'(ms)':>8}  {'':>8}  {'':>8}")
 print("-" * 80)
@@ -66,7 +66,7 @@ for r_max in R_MAX_VALUES:
     r_bins = np.logspace(np.log10(r_min_bin), np.log10(r_max), N_BINS + 1)
     nc = n_cells(r_max)
 
-    t_scope = timeit(lambda rb=r_bins:
+    t_sugc = timeit(lambda rb=r_bins:
                      count_pairs_1d(coords, sv_ids, rb, BOX_SIZE))
     t_cf_1t = timeit(lambda rb=r_bins:
                      DD(1, 1, rb,
@@ -79,10 +79,10 @@ for r_max in R_MAX_VALUES:
                         periodic=True, boxsize=BOX_SIZE,
                         output_ravg=False, verbose=False))
 
-    ratio_1t = t_scope / t_cf_1t
-    ratio_nt = t_scope / t_cf_nt
+    ratio_1t = t_sugc / t_cf_1t
+    ratio_nt = t_sugc / t_cf_nt
     print(f"  {r_max:>8.3g}  {nc:>8d}  "
-          f"{t_scope*1e3:>8.1f}  {t_cf_1t*1e3:>8.1f}  {t_cf_nt*1e3:>8.1f}  "
+          f"{t_sugc*1e3:>8.1f}  {t_cf_1t*1e3:>8.1f}  {t_cf_nt*1e3:>8.1f}  "
           f"{ratio_1t:>8.2f}x  {ratio_nt:>8.2f}x")
 
 print("=" * 80)

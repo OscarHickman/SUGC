@@ -16,8 +16,8 @@ is zero. We demand |ξ| < 0.10 in every well-populated bin (RR > 100).
 import numpy as np
 import pytest
 
-from scope._scope import count_pairs_2d
-from scope import analytic_rr, compute_2pcf
+from sugc._sugc import count_pairs_2d
+from sugc import analytic_rr, compute_2pcf
 
 
 # ─── Brute-force reference ────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ def _bf_2d(coords, sv_ids, rp_bins, pi_bins, box):
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-@pytest.fixture(scope="module")
+@pytest.fixture(sugc="module")
 def small_cat_2d():
     """50-particle catalogue for exact 2D brute-force comparison."""
     rng = np.random.default_rng(2)
@@ -59,7 +59,7 @@ def small_cat_2d():
     return coords, sv_ids, box, rp_bins, pi_bins
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(sugc="module")
 def uniform_cat_2d():
     """3 000-particle uniform field for ξ ≈ 0 physics check (2D)."""
     rng = np.random.default_rng(3)

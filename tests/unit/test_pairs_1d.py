@@ -18,8 +18,8 @@ CLAUDE.md acceptance criterion.
 import numpy as np
 import pytest
 
-from scope._scope import count_pairs_1d
-from scope import analytic_rr_1d, compute_xi
+from sugc._sugc import count_pairs_1d
+from sugc import analytic_rr_1d, compute_xi
 
 
 # ─── Brute-force reference ────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ def _bf_1d(coords, sv_ids, r_bins, box):
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-@pytest.fixture(scope="module")
+@pytest.fixture(sugc="module")
 def small_cat():
     """60-particle catalogue: small enough for exact brute-force comparison."""
     rng = np.random.default_rng(1)
@@ -56,7 +56,7 @@ def small_cat():
     return coords, sv_ids, box, r_bins
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(sugc="module")
 def uniform_cat_1d():
     """4 000-particle uniform field for ξ ≈ 0 physics check."""
     rng = np.random.default_rng(42)

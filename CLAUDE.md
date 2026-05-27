@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-**SCOPE** — **Sparse Correction Of Pair Estimators** — computes multi-point correlation functions for galaxy catalogues drawn from **m of k independent realisations** of a periodic simulation box.
+**SUGC** — **Sparse Correction Of Pair Estimators** — computes multi-point correlation functions for galaxy catalogues drawn from **m of k independent realisations** of a periodic simulation box.
 
 ### Key Capabilities:
 - **Optimized Counters:** Phase 2 Rust backend with Z-sorting, SoA reordering, and constant-time binning.

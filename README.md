@@ -1,9 +1,9 @@
-# SCOPE: Sparse Clustering On Periodic-box Estimator
+# SUGC: Sparse Unbiased Galaxy Clustering
 
-[![PyPI version](https://img.shields.io/pypi/v/scope-corr.svg)](https://pypi.org/project/scope-corr/)
+[![PyPI version](https://img.shields.io/pypi/v/sugc.svg)](https://pypi.org/project/sugc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**SCOPE** is a high-performance hybrid Rust/Python package designed for computing two-point and N-point correlation functions from galaxy catalogues. It is specifically optimized for datasets drawn from sparse sub-volumes of periodic N-body simulations.
+**SUGC** is a high-performance hybrid Rust/Python package designed for computing two-point and N-point correlation functions from galaxy catalogues. It is specifically optimized for datasets drawn from sparse sub-volumes of periodic N-body simulations.
 
 ## Key Features
 
@@ -15,23 +15,23 @@
 
 ## Installation
 
-You can install SCOPE directly from PyPI using \`uv\` or \`pip\`:
+You can install SUGC directly from PyPI using \`uv\` or \`pip\`:
 
 \`\`\`bash
-uv pip install scope-corr
+uv pip install sugc
 \`\`\`
 
 or
 
 \`\`\`bash
-pip install scope-corr
+pip install sugc
 \`\`\`
 
 ## Quick Start
 
 \`\`\`python
 import numpy as np
-import scope
+import sugc
 
 # Generate some random data
 n_galaxies = 100_000
@@ -40,7 +40,7 @@ coords = np.random.uniform(0, box_size, size=(n_galaxies, 3))
 
 # Compute the 2-point correlation function
 r_bins = np.linspace(0.1, 50.0, 20)
-xi = scope.pairs_1d(coords, r_bins, box_size=box_size)
+xi = sugc.pairs_1d(coords, r_bins, box_size=box_size)
 
 print(f"Computed xi(r) at {len(r_bins)-1} bins")
 \`\`\`
@@ -51,7 +51,7 @@ For more detailed examples, including Redshift-Space Distortions (RSD) and 3-poi
 
 ## Citation
 
-If you use SCOPE in your research, please cite:
+If you use SUGC in your research, please cite:
 
 > Hickman, O. et al. (2026). "Fast and Unbiased Clustering Estimators for Sparse Sub-volumes." (In Prep).
 

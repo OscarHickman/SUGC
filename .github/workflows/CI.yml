@@ -176,7 +176,7 @@ jobs:
           args: --release --out dist
           container: off
       - name: Install built wheel
-        run: python -m pip install dist/scope_corr-*.whl
+        run: python -m pip install dist/sugc-*.whl
       - name: Run unit tests
         run: python -m pytest tests/unit/ -v
 

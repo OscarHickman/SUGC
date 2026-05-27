@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from itertools import combinations
-from scope import count_pairs_1d, count_npoint, compute_npcf
+from sugc import count_pairs_1d, count_npoint, compute_npcf
 
 def brute_force_npoint(coords, subvol_ids, r_bins, box_size, n_order):
     """

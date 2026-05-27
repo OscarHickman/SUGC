@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from scope import count_pairs_smu, analytic_rr_smu, compute_xi_smu
+from sugc import count_pairs_smu, analytic_rr_smu, compute_xi_smu
 
 def _bf_smu(coords, sv_ids, s_bins, n_mu, mu_max, box):
     n = len(coords)
