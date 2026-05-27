@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
-from sugc import count_pairs_smu, analytic_rr_smu, compute_xi_smu
+
+from sugc import compute_xi_smu, count_pairs_smu
+
 
 def _bf_smu(coords, sv_ids, s_bins, n_mu, mu_max, box):
     n = len(coords)
@@ -19,13 +21,19 @@ def _bf_smu(coords, sv_ids, s_bins, n_mu, mu_max, box):
             dy = yj - yi
             dz = zj - zi
             
-            # Use same exact logic as Rust: if d > half_box { d -= box } else if d < -half_box { d += box }
-            if dx >  half_box: dx -= box
-            elif dx < -half_box: dx += box
-            if dy >  half_box: dy -= box
-            elif dy < -half_box: dy += box
-            if dz >  half_box: dz -= box
-            elif dz < -half_box: dz += box
+            # Minimum-image convention matching Rust implementation
+            if dx > half_box:
+                dx -= box
+            elif dx < -half_box:
+                dx += box
+            if dy > half_box:
+                dy -= box
+            elif dy < -half_box:
+                dy += box
+            if dz > half_box:
+                dz -= box
+            elif dz < -half_box:
+                dz += box
             
             s_sq = dx*dx + dy*dy + dz*dz
             if s_sq < s_sq_bins[-1]:
@@ -74,12 +82,18 @@ class TestCountPairsSmu:
     def test_invalid_m_exceeds_k(self, small_cat_smu):
         coords, sv_ids, box, s_bins, n_mu, _ = small_cat_smu
         with pytest.raises(ValueError):
-            compute_xi_smu(coords, sv_ids, s_bins, box, n_subvols=3, n_subvols_selected=4, n_mu_bins=n_mu)
+            compute_xi_smu(
+                coords, sv_ids, s_bins, box,
+                n_subvols=3, n_subvols_selected=4, n_mu_bins=n_mu,
+            )
 
     def test_invalid_m_is_zero(self, small_cat_smu):
         coords, sv_ids, box, s_bins, n_mu, _ = small_cat_smu
         with pytest.raises(ValueError):
-            compute_xi_smu(coords, sv_ids, s_bins, box, n_subvols=3, n_subvols_selected=0, n_mu_bins=n_mu)
+            compute_xi_smu(
+                coords, sv_ids, s_bins, box,
+                n_subvols=3, n_subvols_selected=0, n_mu_bins=n_mu,
+            )
 
     def test_output_shape(self, small_cat_smu):
         coords, sv_ids, box, s_bins, n_mu, mu_max = small_cat_smu

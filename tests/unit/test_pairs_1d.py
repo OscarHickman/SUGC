@@ -17,10 +17,9 @@ CLAUDE.md acceptance criterion.
 
 import numpy as np
 import pytest
-
 from sugc._sugc import count_pairs_1d
-from sugc import analytic_rr_1d, compute_xi
 
+from sugc import analytic_rr_1d, compute_xi
 
 # ─── Brute-force reference ────────────────────────────────────────────────────
 
@@ -45,7 +44,7 @@ def _bf_1d(coords, sv_ids, r_bins, box):
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-@pytest.fixture(sugc="module")
+@pytest.fixture(scope="module")
 def small_cat():
     """60-particle catalogue: small enough for exact brute-force comparison."""
     rng = np.random.default_rng(1)
@@ -56,7 +55,7 @@ def small_cat():
     return coords, sv_ids, box, r_bins
 
 
-@pytest.fixture(sugc="module")
+@pytest.fixture(scope="module")
 def uniform_cat_1d():
     """4 000-particle uniform field for ξ ≈ 0 physics check."""
     rng = np.random.default_rng(42)
@@ -211,13 +210,13 @@ class TestAnalyticRR1D:
         assert np.isclose(rr200[0] / rr100[0], (100.0 / 200.0) ** 3)
 
     def test_wider_bin_has_more_rr(self):
-        """A wider radial bin must contain more RR than a narrower one at the same inner edge."""
+        """Wider bin must contain more RR than a narrower one at the same inner edge."""
         rr_narrow = analytic_rr_1d(np.array([5.0, 10.0]), 100.0, 500)
         rr_wide = analytic_rr_1d(np.array([5.0, 15.0]), 100.0, 500)
         assert rr_wide[0] > rr_narrow[0]
 
     def test_monotone_bins_give_more_rr_at_larger_r(self):
-        """Outer shells (larger r) have more volume, hence more RR for equal-width bins."""
+        """Outer shells have more volume, hence more RR for equal-width bins."""
         r_bins = np.array([5.0, 10.0, 15.0])
         rr = analytic_rr_1d(r_bins, 200.0, 500)
         assert rr[1] > rr[0]
@@ -312,10 +311,9 @@ class TestComputeXi:
         r_bins = np.array([1.0, 30.0])
         r2 = compute_xi(coords, sv_ids, r_bins, box, 8, 2)
         r4 = compute_xi(coords, sv_ids, r_bins, box, 8, 4)
-        assert np.isclose(r2["dd_corr"][0] / r4["dd_corr"][0],
-                          (2 / 8 * r2["dd_auto"][0] + 2 * 7 / (8 * 1) * r2["dd_cross"][0]) /
-                          (4 / 8 * r4["dd_auto"][0] + 4 * 7 / (8 * 3) * r4["dd_cross"][0]),
-                          rtol=1e-9)
+        num = 2 / 8 * r2["dd_auto"][0] + 2 * 7 / (8 * 1) * r2["dd_cross"][0]
+        den = 4 / 8 * r4["dd_auto"][0] + 4 * 7 / (8 * 3) * r4["dd_cross"][0]
+        assert np.isclose(r2["dd_corr"][0] / r4["dd_corr"][0], num / den, rtol=1e-9)
 
     def test_uniform_random_xi_near_zero(self, uniform_cat_1d):
         """ξ ≈ 0 for a Poisson field in well-populated bins (CLAUDE.md criterion)."""

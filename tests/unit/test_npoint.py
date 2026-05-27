@@ -1,7 +1,9 @@
-import numpy as np
-import pytest
 from itertools import combinations
-from sugc import count_pairs_1d, count_npoint, compute_npcf
+
+import numpy as np
+
+from sugc import compute_npcf, count_npoint, count_pairs_1d
+
 
 def brute_force_npoint(coords, subvol_ids, r_bins, box_size, n_order):
     """
@@ -12,8 +14,6 @@ def brute_force_npoint(coords, subvol_ids, r_bins, box_size, n_order):
     n_r = len(r_bins) - 1
     t_by_s = np.zeros((n_order, n_r))
     t_total = np.zeros(n_r)
-    half_box = box_size * 0.5
-    
     for indices in combinations(range(n_gal), n_order):
         # Compute all pairwise distances in the tuple
         max_dist = 0.0
@@ -65,7 +65,9 @@ def test_npoint_vs_brute_force_n3():
     r_bins = np.linspace(0.5, 5.0, 5).astype(np.float64)
     
     t_by_s_rust, t_total_rust = count_npoint(coords, subvol_ids, r_bins, box_size, 3)
-    t_by_s_brute, t_total_brute = brute_force_npoint(coords, subvol_ids, r_bins, box_size, 3)
+    t_by_s_brute, t_total_brute = brute_force_npoint(
+        coords, subvol_ids, r_bins, box_size, 3
+    )
     
     np.testing.assert_allclose(t_total_rust, t_total_brute, rtol=1e-10)
     np.testing.assert_allclose(t_by_s_rust, t_by_s_brute, rtol=1e-10)
@@ -79,7 +81,9 @@ def test_npoint_vs_brute_force_n4():
     r_bins = np.linspace(0.5, 4.0, 4).astype(np.float64)
     
     t_by_s_rust, t_total_rust = count_npoint(coords, subvol_ids, r_bins, box_size, 4)
-    t_by_s_brute, t_total_brute = brute_force_npoint(coords, subvol_ids, r_bins, box_size, 4)
+    t_by_s_brute, t_total_brute = brute_force_npoint(
+        coords, subvol_ids, r_bins, box_size, 4
+    )
     
     np.testing.assert_allclose(t_total_rust, t_total_brute, rtol=1e-10)
     np.testing.assert_allclose(t_by_s_rust, t_by_s_brute, rtol=1e-10)
