@@ -81,3 +81,7 @@ docs/_build/
 
 # Scratch / temp
 temp.md
+
+# Misc
+*.pdf
+GEMINI.md

@@ -29,7 +29,9 @@ classifiers = [
 dependencies = ["numpy>=1.23", "matplotlib>=3.8"]
 
 [project.urls]
+Homepage = "https://github.com/OscarHickman/SUGC"
 Repository = "https://github.com/OscarHickman/SUGC"
+"Bug Tracker" = "https://github.com/OscarHickman/SUGC/issues"
 
 [tool.maturin]
 python-source = "python"
