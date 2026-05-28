@@ -112,3 +112,64 @@ class TestCountPairsSmu:
         auto, cross = count_pairs_smu(coords, part_ids, s_bins, n_mu, mu_max, box)
         assert auto.shape == (len(s_bins) - 1, n_mu)
         assert cross.shape == (len(s_bins) - 1, n_mu)
+
+
+class TestComputeXiSmu:
+    def test_compute_xi_smu_returns_correct_keys(self, small_cat_smu):
+        coords, part_ids, box, s_bins, n_mu, mu_max = small_cat_smu
+        res = compute_xi_smu(
+            coords,
+            part_ids,
+            s_bins,
+            box,
+            n_partitions=3,
+            n_partitions_selected=2,
+            n_mu_bins=n_mu,
+            mu_max=mu_max,
+        )
+        expected_keys = {
+            "dd_auto",
+            "dd_cross",
+            "dd_corr",
+            "rr",
+            "xi_grid",
+            "xi_smu",
+            "xi0",
+            "xi2",
+            "s_mid",
+            "mu_mid",
+        }
+        assert expected_keys.issubset(res.keys())
+
+        n_s = len(s_bins) - 1
+        assert res["dd_auto"].shape == (n_s, n_mu)
+        assert res["dd_cross"].shape == (n_s, n_mu)
+        assert res["dd_corr"].shape == (n_s, n_mu)
+        assert res["rr"].shape == (n_s, n_mu)
+        assert res["xi_grid"].shape == (n_s, n_mu)
+        assert res["xi_smu"].shape == (n_s, n_mu)
+        assert res["xi0"].shape == (n_s,)
+        assert res["xi2"].shape == (n_s,)
+        assert res["s_mid"].shape == (n_s,)
+        assert res["mu_mid"].shape == (n_mu,)
+
+    def test_compute_xi_smu_values(self, small_cat_smu):
+        # Verify that for m=k, dd_corr = dd_auto + dd_cross
+        coords, part_ids, box, s_bins, n_mu, mu_max = small_cat_smu
+        res = compute_xi_smu(
+            coords,
+            part_ids,
+            s_bins,
+            box,
+            n_partitions=3,
+            n_partitions_selected=3,
+            n_mu_bins=n_mu,
+            mu_max=mu_max,
+        )
+        assert np.allclose(res["dd_corr"], res["dd_auto"] + res["dd_cross"])
+
+        # Verify relation between xi_grid, dd_corr, rr
+        assert np.allclose(res["xi_grid"], res["dd_corr"] / res["rr"] - 1.0)
+        assert np.allclose(res["xi_smu"], res["dd_corr"] / res["rr"] - 1.0)
+
+

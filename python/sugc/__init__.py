@@ -13,6 +13,17 @@ def analytic_rr_1d(r_bins, box, n):
     return n * (n - 1) / 2.0 * v_shell / box**3
 
 
+def analytic_rr_smu(s_bins, box, n, n_mu_bins, mu_max=1.0):
+    """Analytic RR for (s, mu) estimator: N(N-1)/2 * V_shell/V_box * delta_mu."""
+    s_bins = np.asarray(s_bins, dtype=np.float64)
+    v_shell = (4.0 * np.pi / 3.0) * (s_bins[1:] ** 3 - s_bins[:-1] ** 3)
+    rr_per_shell = n * (n - 1) / 2.0 * v_shell / box**3
+    mu_bin_width = mu_max / n_mu_bins
+    return rr_per_shell[:, None] * np.full(
+        (1, n_mu_bins), mu_bin_width, dtype=np.float64
+    )
+
+
 def analytic_rr(rp_bins, pi_bins, box, n):
     """Analytic RR for 2D (r_p, π) estimator: N(N-1)/2 * V_cyl / V_box."""
     rp_bins = np.asarray(rp_bins, dtype=np.float64)
@@ -124,7 +135,10 @@ def compute_xi_smu(
 ):
     """Compute ξ(s, μ) with sparse-partition correction.
 
-    Returns a dict with keys: dd_auto, dd_cross, dd_corr.
+    Returns a dict with keys: dd_auto, dd_cross, dd_corr, rr, xi_smu,
+    xi_grid, xi0, xi2, s_mid, mu_mid.
+    xi_smu, xi0, xi2 are corrected correlation function estimates
+    (approach 0 at large s).
     """
     k, m = n_partitions, n_partitions_selected
     if m > k:
@@ -142,7 +156,31 @@ def compute_xi_smu(
     beta = m * (k - 1) / (k * (m - 1)) if m > 1 else 0.0
     dd_corr = alpha * dd_auto + beta * dd_cross
 
-    return {"dd_auto": dd_auto, "dd_cross": dd_cross, "dd_corr": dd_corr}
+    rr = analytic_rr_smu(s_bins, box_size, len(coords), n_mu_bins, mu_max)
+    xi_grid = dd_corr / rr - 1.0
+
+    s_bins = np.asarray(s_bins, dtype=np.float64)
+    mu_bins = np.linspace(0.0, mu_max, n_mu_bins + 1)
+    mu_mid = 0.5 * (mu_bins[:-1] + mu_bins[1:])
+    dmu = mu_max / n_mu_bins
+    xi0 = np.nansum(xi_grid * dmu, axis=1)
+    xi2 = 5.0 * np.nansum(xi_grid * 0.5 * (3.0 * mu_mid**2 - 1.0) * dmu, axis=1)
+
+    s_mid = np.sqrt(s_bins[:-1] * s_bins[1:])
+
+    return {
+        "dd_auto": dd_auto,
+        "dd_cross": dd_cross,
+        "dd_corr": dd_corr,
+        "rr": rr,
+        "xi_grid": xi_grid,
+        "xi_smu": xi_grid,
+        "xi0": xi0,
+        "xi2": xi2,
+        "s_mid": s_mid,
+        "mu_mid": mu_mid,
+    }
+
 
 
 def compute_npcf(
