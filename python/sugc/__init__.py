@@ -182,7 +182,6 @@ def compute_xi_smu(
     }
 
 
-
 def compute_npcf(
     coords,
     partition_ids,

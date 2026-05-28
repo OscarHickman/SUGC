@@ -171,5 +171,3 @@ class TestComputeXiSmu:
         # Verify relation between xi_grid, dd_corr, rr
         assert np.allclose(res["xi_grid"], res["dd_corr"] / res["rr"] - 1.0)
         assert np.allclose(res["xi_smu"], res["dd_corr"] / res["rr"] - 1.0)
-
-
