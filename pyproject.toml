@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "SUGC"
-version = "0.1.0"
+version = "0.1.1"
 description = "Sparse Unbiased Galaxy Clustering - high-performance hybrid Rust/Python correlation functions"
 authors = [
     { name = "Oscar Hickman", email = "oscar.hickman17@alumni.imperial.ac.uk" }
