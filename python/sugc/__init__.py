@@ -3,7 +3,7 @@ import numpy as np
 from ._sugc import *  # noqa: F403
 from ._sugc import count_npoint, count_pairs_1d, count_pairs_2d, count_pairs_smu
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 def analytic_rr_1d(r_bins, box, n):
@@ -190,10 +190,11 @@ def compute_npcf(
     n_partitions,
     n_partitions_selected,
     n_order,
+    scale_method="scale-up",
 ):
     """Compute the N-point correlation function with sparse-partition correction.
 
-    Returns a dict with keys: t_corr, t_total, weights.
+    Returns a dict with keys: t_corr, t_total, weights, zeta.
     """
     k, m = n_partitions, n_partitions_selected
     if m > k:
@@ -202,6 +203,8 @@ def compute_npcf(
         )
     if m <= 0:
         raise ValueError(f"n_partitions_selected must be >= 1, got {m}")
+    if scale_method not in ("scale-up", "scale-down"):
+        raise ValueError(f"Unknown scale_method: {scale_method}")
 
     t_by_s, t_total = count_npoint(coords, partition_ids, r_bins, box_size, n_order)
 
@@ -211,8 +214,22 @@ def compute_npcf(
         w = 1.0
         for i in range(s):
             w *= (k - i) / (m - i)
+        if scale_method == "scale-down":
+            w *= (m / k) ** n_order
         weights[s - 1] = w
 
     t_corr = sum(weights[s] * t_by_s[s] for s in range(n_order))
 
-    return {"t_corr": t_corr, "t_total": t_total, "weights": weights}
+    # normalisation factor (reduced N-point function)
+    n_gal = len(coords)
+    from math import comb
+
+    norm = comb(n_gal, n_order) if n_gal >= n_order else 1.0
+    zeta = t_corr / norm
+
+    return {
+        "t_corr": t_corr,
+        "t_total": t_total,
+        "weights": weights,
+        "zeta": zeta,
+    }

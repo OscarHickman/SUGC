@@ -179,20 +179,39 @@ pub fn count_npoint<'py>(
                             let partj = parts[kj];
                             for idx_k in idx_j + 1..neighbors.len() {
                                 let (kk, dxk, dyk, dzk, r_ik_sq) = neighbors[idx_k];
-                                let mut dx = dxk - dxj; let mut dy = dyk - dyj; let mut dz = dzk - dzj;
+
+                                let mut dz = dzk - dzj;
                                 if needs_pbc_for_neighbors {
-                                    if dx > half_box { dx -= box_size; } else if dx < -half_box { dx += box_size; }
-                                    if dy > half_box { dy -= box_size; } else if dy < -half_box { dy += box_size; }
                                     if dz > half_box { dz -= box_size; } else if dz < -half_box { dz += box_size; }
                                 }
-                                let r_sq = dx*dx + dy*dy + dz*dz;
+                                let dz_sq = dz * dz;
+                                if dz_sq >= r_sq_max { continue; }
+
+                                let mut dy = dyk - dyj;
+                                if needs_pbc_for_neighbors {
+                                    if dy > half_box { dy -= box_size; } else if dy < -half_box { dy += box_size; }
+                                }
+                                let dy_dz_sq = dy * dy + dz_sq;
+                                if dy_dz_sq >= r_sq_max { continue; }
+
+                                let mut dx = dxk - dxj;
+                                if needs_pbc_for_neighbors {
+                                    if dx > half_box { dx -= box_size; } else if dx < -half_box { dx += box_size; }
+                                }
+                                let r_sq = dx * dx + dy_dz_sq;
                                 if r_sq >= r_sq_max { continue; }
+
                                 let r_tuple_max = r_ij_sq.max(r_ik_sq).max(r_sq);
                                 let b_idx = (r_tuple_max * table_scale) as usize;
                                 let bin = unsafe { *bin_table.get_unchecked(b_idx.min(n_table - 1)) };
                                 if bin >= 0 {
-                                    let mut s_vals = [parti, partj, parts[kk]]; s_vals.sort_unstable();
-                                    let mut s = 1; if s_vals[1] != s_vals[0] { s += 1; } if s_vals[2] != s_vals[1] { s += 1; }
+                                    let s = if parti == partj && partj == parts[kk] {
+                                        1
+                                    } else if parti != partj && partj != parts[kk] && parti != parts[kk] {
+                                        3
+                                    } else {
+                                        2
+                                    };
                                     unsafe { *t_by_s.get_unchecked_mut((s - 1) * n_r + bin as usize) += 1.0; }
                                 }
                             }

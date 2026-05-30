@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 type: software
 title: "SUGC: Sparse Unbiased Galaxy Clustering"
-version: 0.1.0
-date-released: 2026-05-27
+version: 0.2.0
+date-released: 2026-05-30
 license: MIT
 url: "https://github.com/OscarHickman/SUGC"
 repository-code: "https://github.com/OscarHickman/SUGC"
